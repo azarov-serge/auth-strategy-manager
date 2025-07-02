@@ -25,7 +25,7 @@ export class KeycloakStrategy implements Strategy {
 
   signInUrl?: string;
 
-  public readonly helper: StrategyHelper;
+  private readonly helper: StrategyHelper;
 
   constructor(config: Config) {
     const { name, keycloak, loginUrl } = config;
