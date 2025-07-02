@@ -14,8 +14,8 @@ const startUrl = `${protocol}//${baseUrl}`;
 export class Authorizer extends StrategyHelper {
   public readonly strategiesCount: number;
 
-  private readonly strategies: AuthorizerStrategies;
-  private readonly helper: StrategyHelper;
+  public readonly strategies: AuthorizerStrategies;
+  public readonly helper: StrategyHelper;
 
   constructor(strategies: AuthorizerStrategy[]) {
     super();
