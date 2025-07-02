@@ -14,7 +14,7 @@ const startUrl = `${protocol}//${baseUrl}`;
 export class Authorizer extends StrategyHelper {
   public readonly strategiesCount: number;
 
-  private readonly strategies: AuthorizerStrategies;
+  private strategies: AuthorizerStrategies;
   private readonly helper: StrategyHelper;
 
   constructor(strategies: AuthorizerStrategy[]) {
@@ -41,7 +41,15 @@ export class Authorizer extends StrategyHelper {
     return this.strategy instanceof KeycloakStrategy;
   }
 
-  check = async (): Promise<boolean> => {
+  get startUrl(): string | undefined {
+    return this.helper.startUrl;
+  }
+
+  set startUrl(url: string) {
+    this.helper.startUrl = url;
+  }
+
+  public check = async (): Promise<boolean> => {
     const strategyNames = Object.keys(this.strategies);
     const strategyName = strategyNames[0];
 
@@ -85,19 +93,19 @@ export class Authorizer extends StrategyHelper {
     return isAuthenticated;
   };
 
-  get startUrl(): string | undefined {
-    return this.helper.startUrl;
-  }
+  public setStrategies = async (strategies: AuthorizerStrategy[]): Promise<void> => {
+    this.strategies = strategies.reduce<AuthorizerStrategies>((acc, strategy) => {
+      acc[strategy.name] = strategy;
 
-  set startUrl(url: string) {
-    this.helper.startUrl = url;
-  }
+      return acc;
+    }, {});
+  };
 
-  use = (strategyName: string): void => {
+  public use = (strategyName: string): void => {
     this.activeStrategyName = strategyName;
   };
 
-  clear = () => {
+  public clear = () => {
     this.activeStrategyName = emptyStrategy.name;
     this.startUrl = startUrl;
   };
