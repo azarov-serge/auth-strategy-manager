@@ -1,0 +1,10 @@
+.eslintcache
+
+node_modules
+build
+dist
+coverage
+.idea
+.vscode
+.DS_Store
+**/.DS_Store

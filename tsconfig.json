@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "declaration": true,
+    "sourceMap": true,
+    "rootDirs": ["src"],
+    "lib": ["dom", "esnext"],
+    // This will include all packages from array only
+    // node_modules/@types - is default path. Required, otherwise it will be ignored.
+    "typeRoots": ["node_modules/@types"],
+    "downlevelIteration": true,
+    "allowJs": true, // Allow JavaScript files to be compiled
+    "skipLibCheck": true, // Skip type checking of declaration files (.d.ts)
+    "esModuleInterop": true, // Creates __importStar and __importDefault helpers for compatibility with the Babel
+    "allowSyntheticDefaultImports": true, // allows import w/o default prop
+    "strict": true, // Еnable all of the strict mode family options
+    "forceConsistentCasingInFileNames": true, // Force consistent casing in file names
+    "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch statements
+    "module": "CommonJS", // Sets the module system for the program. Also it's required when use outFile option.
+    "moduleResolution": "node", // Specify the module resolution strategy
+    "resolveJsonModule": true, // Allows importing modules with a ‘.json’ extension, which is a common practice in node projects
+    "isolatedModules": true, // all implementation files must be modules (which means it has some form of import/export)
+    "noImplicitAny": false, // Raise error if the type "any" is specified somewhere
+    "noImplicitThis": true, // Raise error on "this" expressions with an implied "any" type
+    "noUnusedLocals": true, // Raise errors on unused local variables
+    "noUnusedParameters": true, // Report errors on unused parameters
+    "noEmit": true, // Do not emit compiler output files like JavaScript source code, source-maps or declarations
+    "experimentalDecorators": true /* Enables experimental support for ES7 decorators. */,
+    "emitDecoratorMetadata": true /* Enables experimental support for emitting type metadata for decorators. */,
+    "jsx": "react",
+    "plugins": [
+      {
+        "name": "typescript-plugin-css-modules", // auto-genertes virtual .d.ts for an every css file
+        "options": {
+          "customTemplate": "./customTemplate.js"
+        }
+      }
+    ],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["example/*"],
+      "@shared/*": ["example/src/shared/*"],
+      "@app/*": ["example/src/app/*"],
+      "@models/*": ["example/src/shared/models/*"],
+      "@models": ["example/src/shared/models/index"],
+      // "@shared/utils/*": ["example/src/shared/utils/*"],
+      // "@shared/hooks/*": ["example/src/shared/hooks/*"],
+      // "@shared/components/*": ["example/src/shared/components/*"],
+      // "@shared/types/*": ["example/src/shared/types/*"],
+    }
+  },
+  "include": ["src/**/*", "*.d.ts"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
