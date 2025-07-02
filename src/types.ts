@@ -1,8 +1,6 @@
 import { AxiosRequestConfig } from 'axios';
-import { KeycloakStrategy, RestStrategy } from './strategies';
 
-export type AuthorizerStrategy = Strategy | RestStrategy | KeycloakStrategy;
-export type AuthorizerStrategies = Record<string, AuthorizerStrategy>;
+export type AuthorizerStrategies = Record<string, Strategy>;
 
 export type Strategy = {
   name: string;
@@ -19,12 +17,12 @@ export type Strategy = {
 
 export type AuthorizerInterface = {
   strategiesCount: number;
-  strategy: AuthorizerStrategy;
+  strategy: Strategy;
   isKeycloak: boolean;
   startUrl: string | undefined;
 
   check: () => Promise<boolean>;
-  setStrategies: (strategies: AuthorizerStrategy[]) => Promise<void>;
+  setStrategies: (strategies: Strategy[]) => Promise<void>;
   use: (strategyName: string) => void;
   clear: () => void;
 };

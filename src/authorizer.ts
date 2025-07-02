@@ -3,7 +3,7 @@ import { CERT_ERROR_CODE, networkErrors } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
 import { EmptyStrategy, KeycloakStrategy } from './strategies';
 
-import { AuthorizerStrategy, AuthorizerStrategies, AuthorizerInterface } from './types';
+import { AuthorizerStrategies, AuthorizerInterface, Strategy } from './types';
 
 const emptyStrategy = new EmptyStrategy();
 const protocol = window.location.protocol;
@@ -17,7 +17,7 @@ export class Authorizer extends StrategyHelper implements AuthorizerInterface {
   private strategies: AuthorizerStrategies;
   private readonly helper: StrategyHelper;
 
-  constructor(strategies: AuthorizerStrategy[]) {
+  constructor(strategies: Strategy[]) {
     super();
 
     this.helper = strategyHelper;
@@ -29,7 +29,7 @@ export class Authorizer extends StrategyHelper implements AuthorizerInterface {
     }, {});
   }
 
-  get strategy(): AuthorizerStrategy {
+  get strategy(): Strategy {
     if (!this.activeStrategyName || !this.strategies) {
       return emptyStrategy;
     }
@@ -93,7 +93,7 @@ export class Authorizer extends StrategyHelper implements AuthorizerInterface {
     return isAuthenticated;
   };
 
-  public setStrategies = async (strategies: AuthorizerStrategy[]): Promise<void> => {
+  public setStrategies = async (strategies: Strategy[]): Promise<void> => {
     this.strategies = strategies.reduce<AuthorizerStrategies>((acc, strategy) => {
       acc[strategy.name] = strategy;
 
