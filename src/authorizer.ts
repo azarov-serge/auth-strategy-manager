@@ -1,5 +1,5 @@
-import { CertError, NetworkError } from '../queries';
-import { CERT_ERROR_CODE, networkErrors } from '../constants';
+import { CertError, NetworkError } from './errors';
+import { CERT_ERROR_CODE, networkErrors } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
 import { EmptyStrategy, KeycloakStrategy } from './strategies';
 
