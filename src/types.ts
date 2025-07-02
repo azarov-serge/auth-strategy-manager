@@ -16,3 +16,15 @@ export type Strategy = {
   signOut: () => Promise<void>;
   refreshToken: <T>(args?: T) => Promise<void>;
 };
+
+export type AuthorizerInterface = {
+  strategiesCount: number;
+  strategy: AuthorizerStrategy;
+  isKeycloak: boolean;
+  startUrl: string | undefined;
+
+  check: () => Promise<boolean>;
+  setStrategies: (strategies: AuthorizerStrategy[]) => Promise<void>;
+  use: (strategyName: string) => void;
+  clear: () => void;
+};

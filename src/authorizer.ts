@@ -3,7 +3,7 @@ import { CERT_ERROR_CODE, networkErrors } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
 import { EmptyStrategy, KeycloakStrategy } from './strategies';
 
-import { AuthorizerStrategy, AuthorizerStrategies } from './types';
+import { AuthorizerStrategy, AuthorizerStrategies, AuthorizerInterface } from './types';
 
 const emptyStrategy = new EmptyStrategy();
 const protocol = window.location.protocol;
@@ -11,7 +11,7 @@ const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
 
 const startUrl = `${protocol}//${baseUrl}`;
 
-export class Authorizer extends StrategyHelper {
+export class Authorizer extends StrategyHelper implements AuthorizerInterface {
   public readonly strategiesCount: number;
 
   private strategies: AuthorizerStrategies;
