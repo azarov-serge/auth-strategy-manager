@@ -7,16 +7,29 @@ export type Strategy = {
   token?: string;
   isAuthenticated?: boolean;
   startUrl?: string;
-  loginUrl?: string;
+  signInUrl?: string;
   check: () => Promise<boolean>;
-  logIn: <D, T>(config?: AxiosRequestConfig<D>) => Promise<T>;
-  logOut: () => Promise<void>;
+  signIn: <D, T>(config?: AxiosRequestConfig<D>) => Promise<T>;
+  signUp: <D, T>(config?: AxiosRequestConfig<D>) => Promise<T>;
+  signOut: () => Promise<void>;
   refreshToken: <T>(args?: T) => Promise<void>;
+};
+
+export type AuthorizerInterface = {
+  strategiesCount: number;
+  strategy: Strategy;
+  isKeycloak: boolean;
+  startUrl: string | undefined;
+
+  check: () => Promise<boolean>;
+  setStrategies: (strategies: Strategy[]) => Promise<void>;
+  use: (strategyName: string) => void;
+  clear: () => void;
 };
 ```
 
 2 strategies are implemented:
-- `rest` - authorization by login and password (`RestStrategy`). `access token` is stored in `Session storage`.
+- `rest` - authorization by signIn and password (`RestStrategy`). `access token` is stored in `Session storage`.
 - `keycloak` - authorization through Keycloak (`KeycloakStrategy`)
 
 Example:
@@ -40,7 +53,7 @@ const activeStrategies = window.envConfig.AUTH_STRATEGIES ?? [];
 const protocol = window.location.protocol;
 const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
 
-const logInUrl = `${protocol}//${baseUrl}/login`;
+const signInUrl = `${protocol}//${baseUrl}/signIn`;
 
 const {
   KEYCLOAK_REALM: realm,
@@ -50,21 +63,25 @@ const {
 
 const keycloakStrategy = new KeycloakStrategy({
   keycloak: { realm, url: keycloakUrl, clientId },
-  loginUrl: logInUrl,
+  signInUrl: signInUrl,
   only: activeStrategies.length === 1 && activeStrategies.includes('sso'),
 });
 
 const restStrategy = new restStrategy({
-  loginUrl: logInUrl,
+  signInUrl: signInUrl,
   check: {
     url: `${BASE_URL}/token/refresh`,
     method: 'POST',
   },
-  logIn: {
-    url: `${BASE_URL}/auth/login`,
+  signIn: {
+    url: `${BASE_URL}/auth/sign-in`,
     method: 'POST',
   },
-  logOut: { url: `${BASE_URL}/auth/logout`, method: 'POST' },
+  signUp: {
+    url: `${BASE_URL}/auth/sign-up`,
+    method: 'POST',
+  },
+  signOut: { url: `${BASE_URL}/auth/sign-out`, method: 'POST' },
   refresh: {
     url: `${BASE_URL}/token/refresh`,
     method: 'POST',
