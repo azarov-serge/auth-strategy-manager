@@ -1,6 +1,6 @@
 import { AxiosRequestConfig } from 'axios';
 
-export type AuthorizerStrategies = Record<string, Strategy>;
+export type AuthStrategyManagerStrategies = Record<string, Strategy>;
 
 export type Strategy = {
   name: string;
@@ -15,7 +15,7 @@ export type Strategy = {
   refreshToken: <T>(args?: T) => Promise<void>;
 };
 
-export type AuthorizerInterface = {
+export type AuthStrategyManagerInterface = {
   strategiesCount: number;
   strategy: Strategy;
   isKeycloak: boolean;

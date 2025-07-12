@@ -20,7 +20,7 @@ const DEFAULT_TOKEN_KEY = 'access';
 export class RestStrategy implements Strategy {
   public readonly name: string;
   public readonly axiosInstance: AxiosInstance;
-  public readonly urls: Record<UrlName, UrlConfig>;
+  public readonly urls: Partial<Record<UrlName, UrlConfig>>;
   signInUrl?: string;
 
   private readonly tokenKey: string;
@@ -66,6 +66,10 @@ export class RestStrategy implements Strategy {
       return false;
     }
 
+    if (!this.urls.check) {
+      throw new Error('Check URL is not defined');
+    }
+
     const { url, method } = this.urls.check;
     const response = await this.axiosInstance(url, { method });
 
@@ -82,6 +86,10 @@ export class RestStrategy implements Strategy {
   };
 
   signIn = async <D, T>(config?: AxiosRequestConfig<D>): Promise<T> => {
+    if (!this.urls.signIn) {
+      throw new Error('Sign in URL is not defined');
+    }
+
     const { url, method } = this.urls.signIn;
 
     const response = await this.axiosInstance(url, { ...(config ?? {}), method });
@@ -96,6 +104,10 @@ export class RestStrategy implements Strategy {
   };
 
   signUp = async <D, T>(config?: AxiosRequestConfig<D>): Promise<T> => {
+    if (!this.urls.signUp) {
+      throw new Error('Sign up URL is not defined');
+    }
+
     const { url, method } = this.urls.signUp;
 
     const response = await this.axiosInstance(url, { ...(config ?? {}), method });
@@ -110,6 +122,10 @@ export class RestStrategy implements Strategy {
   };
 
   signOut = async (): Promise<void> => {
+    if (!this.urls.signOut) {
+      throw new Error('Sign out URL is not defined');
+    }
+
     const { url, method } = this.urls.signOut;
     if (!url) {
       this.clearAuthData();
@@ -124,6 +140,10 @@ export class RestStrategy implements Strategy {
   };
 
   refreshToken = async (): Promise<void> => {
+    if (!this.urls.refresh) {
+      throw new Error('Refresh token URL is not defined');
+    }
+
     const { url, method } = this.urls.refresh;
     if (!url) {
       return;

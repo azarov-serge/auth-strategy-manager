@@ -1,7 +1,7 @@
 {
-  "name": "authorizer",
+  "name": "auth-strategy-manager",
   "version": "1.0.0",
-  "description": "",
+  "description": "Authorization utility based on strategies for flexible authentication management",
   "main": "src/index.ts",
   "scripts": {
     "format": "npx prettier \"src/**/*.{js,jsx,ts,tsx}\" --write",
@@ -23,7 +23,30 @@
     "axios": ">=1.5.1",
     "keycloak-js": "24.0.1"
   },
-  "keywords": [],
+  "keywords": [
+    "authentication",
+    "authorization",
+    "strategy",
+    "keycloak",
+    "rest",
+    "auth",
+    "login",
+    "jwt",
+    "token"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/auth-strategy-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/auth-strategy-manager/issues"
+  },
+  "homepage": "https://github.com/your-username/auth-strategy-manager#readme",
+  "files": [
+    "src/**/*",
+    "README.md"
+  ],
+  "types": "src/index.ts"
 }

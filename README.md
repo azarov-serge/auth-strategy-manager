@@ -1,4 +1,4 @@
-## Authorizer
+## Auth Strategy Manager
 Authorization utility based on strategies. Strategy implements the Strategy type.
 
 ```typescript
@@ -42,7 +42,7 @@ import {
   isObject,
   isString
   errorChecker 
-} from 'mobx-tk';
+} from 'auth-strategy-manager';
 
 
 const BASE_URL = 'https://localhost:3001'
