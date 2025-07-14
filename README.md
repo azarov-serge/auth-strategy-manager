@@ -1,8 +1,5 @@
 # Auth Strategy Manager
 
-[![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-
 A flexible library for managing authentication with support for multiple strategies. Allows easy integration of various authentication methods (Keycloak, REST API, custom) into a unified interface.
 
 > 🇷🇺 [Читать на русском языке](README_RU.md)
@@ -445,7 +442,7 @@ npm run format
 
 ## 📝 License
 
-ISC License
+MIT
 
 ## 🤝 Contributing
 
@@ -462,3 +459,5 @@ If you have questions or issues, create an issue in the GitHub repository.
 ---
 
 **Auth Strategy Manager** - make authentication simple and flexible! 🔐 
+
+> 🇷🇺 [Читать на русском языке](README_RU.md)

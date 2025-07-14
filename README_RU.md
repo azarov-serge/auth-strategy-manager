@@ -1,8 +1,5 @@
 # Auth Strategy Manager
 
-[![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-
 Гибкая библиотека для управления аутентификацией с поддержкой множественных стратегий. Позволяет легко интегрировать различные методы аутентификации (Keycloak, REST API, кастомные) в единый интерфейс.
 
 > 🇺🇸 [Read in English](README.md)
@@ -444,7 +441,7 @@ npm run format
 
 ## 📝 Лицензия
 
-ISC License
+MIT
 
 ## 🤝 Вклад в проект
 
@@ -461,3 +458,5 @@ ISC License
 ---
 
 **Auth Strategy Manager** - сделайте аутентификацию простой и гибкой! 🔐
+
+> 🇺🇸 [Read in English](README.md)
