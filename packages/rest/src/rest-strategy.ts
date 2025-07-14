@@ -1,19 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-
-import { strategyHelper, StrategyHelper } from '../helpers';
-import { Strategy } from '../types';
-import { UrlConfig } from './types';
-
-type UrlName = 'check' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
-
-type Config = Record<UrlName, UrlConfig> & {
-  name?: string;
-  tokenKey?: string;
-  /** URL for redirecting to the authorization page */
-  signInUrl?: string;
-  axiosInstance?: AxiosInstance;
-  getToken?: (response: unknown, url?: string) => string;
-};
+import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
+import { Config, UrlName } from './types';
 
 const DEFAULT_NAME = 'rest';
 const DEFAULT_TOKEN_KEY = 'access';
@@ -21,7 +8,7 @@ const DEFAULT_TOKEN_KEY = 'access';
 export class RestStrategy implements Strategy {
   public readonly name: string;
   public readonly axiosInstance: AxiosInstance;
-  public readonly urls: Partial<Record<UrlName, UrlConfig>>;
+  public readonly urls: Partial<Record<UrlName, any>>;
   signInUrl?: string;
 
   private readonly tokenKey: string;
@@ -32,7 +19,7 @@ export class RestStrategy implements Strategy {
   constructor(config: Config) {
     const { name, tokenKey, getToken, signInUrl: loginUrl, ...urls } = config;
 
-    this.helper = strategyHelper;
+    this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
     this.tokenKey = tokenKey || DEFAULT_TOKEN_KEY;
     this.getToken = getToken;
@@ -79,7 +66,6 @@ export class RestStrategy implements Strategy {
 
     if (isAuthenticated) {
       this.helper.activeStrategyName = this.name;
-
       this.setAuthParams(token);
     }
 
@@ -92,9 +78,7 @@ export class RestStrategy implements Strategy {
     }
 
     const { url, method } = this.urls.signIn;
-
     const response = await this.axiosInstance(url, { ...(config ?? {}), method });
-
     const token = this.extractToken(response, url);
 
     if (token) {
@@ -110,9 +94,7 @@ export class RestStrategy implements Strategy {
     }
 
     const { url, method } = this.urls.signUp;
-
     const response = await this.axiosInstance(url, { ...(config ?? {}), method });
-
     const token = this.extractToken(response, url);
 
     if (token) {
@@ -133,10 +115,7 @@ export class RestStrategy implements Strategy {
       return;
     }
 
-    await this.axiosInstance(url, {
-      method,
-    });
-
+    await this.axiosInstance(url, { method });
     this.clearAuthData();
   };
 
@@ -160,7 +139,6 @@ export class RestStrategy implements Strategy {
     });
 
     const response = await this.axiosInstance(url, { method });
-
     const token = this.extractToken(response, url);
 
     if (token) {

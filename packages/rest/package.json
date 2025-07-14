@@ -1,0 +1,42 @@
+{
+  "name": "@auth-strategy-manager/rest",
+  "version": "1.0.0",
+  "description": "REST API strategy for auth-strategy-manager",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "@auth-strategy-manager/core": "^1.0.0",
+    "axios": ">=1.5.1"
+  },
+  "peerDependencies": {
+    "axios": ">=1.5.1"
+  },
+  "keywords": [
+    "authentication",
+    "authorization",
+    "strategy",
+    "rest",
+    "api",
+    "auth",
+    "http"
+  ],
+  "author": "azarov-serge <s.a.azarov@gmail.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azarov-serge/auth-strategy-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/azarov-serge/auth-strategy-manager/issues"
+  },
+  "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme"
+} 

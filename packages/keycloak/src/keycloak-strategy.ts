@@ -1,19 +1,6 @@
 import Keycloak from 'keycloak-js';
-
-import { strategyHelper, StrategyHelper } from '../helpers';
-import { Strategy } from '../types';
-
-type Config = {
-  keycloak: {
-    realm: string;
-    url: string;
-    clientId: string;
-  };
-
-  loginUrl?: string;
-  name?: string;
-  only?: boolean;
-};
+import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
+import { Config } from './types';
 
 const DEFAULT_NAME = 'keycloak';
 const MIN_VALIDITY_SECONDS = 5;
@@ -30,7 +17,7 @@ export class KeycloakStrategy implements Strategy {
   constructor(config: Config) {
     const { name, keycloak, loginUrl } = config;
 
-    this.helper = strategyHelper;
+    this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
     this.signInUrl = loginUrl;
     this.only = config?.only ?? false;

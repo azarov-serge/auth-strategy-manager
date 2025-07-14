@@ -1,7 +1,7 @@
 import { CertError, NetworkError, Timeout3rdPartyError } from './errors';
 import { CERT_ERROR_CODE, NETWORK_ERROR_CODE, TIMEOUT_3RD_PARTY_ERROR_CODE } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
-import { EmptyStrategy, KeycloakStrategy } from './strategies';
+import { EmptyStrategy } from './strategies';
 
 import { AuthStrategyManagerStrategies, AuthStrategyManagerInterface, Strategy } from './types';
 
@@ -11,15 +11,13 @@ const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
 
 const startUrl = `${protocol}//${baseUrl}`;
 
-export class AuthStrategyManager extends StrategyHelper implements AuthStrategyManagerInterface {
+export class AuthStrategyManager implements AuthStrategyManagerInterface {
   public readonly strategiesCount: number;
 
   private strategies: AuthStrategyManagerStrategies;
   private readonly helper: StrategyHelper;
 
   constructor(strategies: Strategy[]) {
-    super();
-
     this.helper = strategyHelper;
     this.strategiesCount = strategies.length;
     this.strategies = strategies.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
@@ -30,15 +28,11 @@ export class AuthStrategyManager extends StrategyHelper implements AuthStrategyM
   }
 
   get strategy(): Strategy {
-    if (!this.activeStrategyName || !this.strategies) {
+    if (!this.helper.activeStrategyName || !this.strategies) {
       return emptyStrategy;
     }
 
-    return this.strategies[this.activeStrategyName] ?? emptyStrategy;
-  }
-
-  get isKeycloak(): boolean {
-    return this.strategy instanceof KeycloakStrategy;
+    return this.strategies[this.helper.activeStrategyName] ?? emptyStrategy;
   }
 
   get startUrl(): string | undefined {
@@ -53,12 +47,8 @@ export class AuthStrategyManager extends StrategyHelper implements AuthStrategyM
     const strategyNames = Object.keys(this.strategies);
     const strategyName = strategyNames[0];
 
-    if (strategyNames.length === 1 && this.strategies[strategyName] instanceof KeycloakStrategy) {
-      const isAuthenticated = await this.strategies[strategyName].check();
-
-      await this.strategies[strategyName].signIn();
-
-      return isAuthenticated;
+    if (strategyNames.length === 1) {
+      return await this.strategies[strategyName].check();
     }
 
     const actives = await Promise.allSettled(
@@ -71,7 +61,7 @@ export class AuthStrategyManager extends StrategyHelper implements AuthStrategyM
       const active = actives[index];
 
       if (active.status === 'fulfilled' && active.value === true) {
-        this.activeStrategyName = strategyNames[index];
+        this.helper.activeStrategyName = strategyNames[index];
 
         isAuthenticated = true;
 
@@ -109,11 +99,11 @@ export class AuthStrategyManager extends StrategyHelper implements AuthStrategyM
   };
 
   public use = (strategyName: string): void => {
-    this.activeStrategyName = strategyName;
+    this.helper.activeStrategyName = strategyName;
   };
 
   public clear = () => {
-    this.activeStrategyName = emptyStrategy.name;
+    this.helper.activeStrategyName = emptyStrategy.name;
     this.startUrl = startUrl;
   };
 }

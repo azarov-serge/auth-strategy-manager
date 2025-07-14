@@ -1,0 +1,33 @@
+{
+  "name": "@auth-strategy-manager/core",
+  "version": "1.0.0",
+  "description": "Core authentication strategy manager",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "keywords": [
+    "authentication",
+    "authorization",
+    "strategy",
+    "auth",
+    "core"
+  ],
+  "author": "azarov-serge <s.a.azarov@gmail.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azarov-serge/auth-strategy-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/azarov-serge/auth-strategy-manager/issues"
+  },
+  "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme"
+} 
