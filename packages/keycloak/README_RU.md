@@ -13,14 +13,6 @@
 npm install @auth-strategy-manager/keycloak @auth-strategy-manager/core keycloak-js
 ```
 
-или через meta-package:
-
-```bash
-npm install auth-strategy-manager @auth-strategy-manager/keycloak keycloak-js
-```
-
-> Этот meta-package автоматически установит `@auth-strategy-manager/core`.
-
 ## Использование
 
 ```typescript
@@ -76,8 +68,8 @@ type KeycloakConfig = {
 
 - `keycloak.realm` - Имя realm в Keycloak
 - `keycloak.url` - URL сервера Keycloak
-- `keycloak.clientId` - ID клиента Keycloak
-- `loginUrl` - URL для перенаправления после выхода
+- `keycloak.clientId` - Client ID в Keycloak
+- `loginUrl` - URL для редиректа после выхода
 - `name` - Имя стратегии (по умолчанию: 'keycloak')
 - `only` - Если true, доступна только эта стратегия
 

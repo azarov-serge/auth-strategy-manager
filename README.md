@@ -1,7 +1,7 @@
 # Auth Strategy Manager
 
-[![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![npm version](https://badge.fury.io/js/@auth-strategy-manager/core.svg)](https://badge.fury.io/js/@auth-strategy-manager/core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A flexible library for managing authentication with support for multiple strategies. Allows easy integration of various authentication methods (Keycloak, REST API, custom) into a unified interface.
 
@@ -14,7 +14,7 @@ A flexible library for managing authentication with support for multiple strateg
 
 This repository contains the following packages:
 
-- Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Keycloak strategy
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - REST API strategy
 
@@ -23,10 +23,8 @@ This repository contains the following packages:
 ### Install Core Package
 
 ```bash
-npm install auth-strategy-manager
+npm install @auth-strategy-manager/core
 ```
-
-> This meta-package will automatically install `@auth-strategy-manager/core` for you.
 
 ### Install with Keycloak Strategy
 
@@ -207,7 +205,7 @@ npm run publish:rest
 
 ## 📝 License
 
-ISC License
+MIT License
 
 ## 🤝 Contributing
 

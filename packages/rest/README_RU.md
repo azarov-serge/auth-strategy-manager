@@ -13,14 +13,6 @@
 npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
 ```
 
-или через meta-package:
-
-```bash
-npm install auth-strategy-manager @auth-strategy-manager/rest axios
-```
-
-> Этот meta-package автоматически установит `@auth-strategy-manager/core`.
-
 ## Использование
 
 ```typescript

@@ -13,14 +13,6 @@ REST API strategy for auth-strategy-manager.
 npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
 ```
 
-or via meta-package:
-
-```bash
-npm install auth-strategy-manager @auth-strategy-manager/rest axios
-```
-
-> The meta-package will automatically install `@auth-strategy-manager/core` for you.
-
 ## Usage
 
 ```typescript

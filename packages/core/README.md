@@ -13,14 +13,6 @@ Core authentication strategy manager - the foundation for all authentication str
 npm install @auth-strategy-manager/core
 ```
 
-or via meta-package:
-
-```bash
-npm install auth-strategy-manager
-```
-
-> The meta-package will automatically install `@auth-strategy-manager/core` for you.
-
 ## Usage
 
 ```typescript
@@ -80,31 +72,4 @@ constructor(strategies: Strategy[])
 
 ### Strategy Interface
 
-```typescript
-interface Strategy {
-  name: string;
-  token?: string;
-  isAuthenticated?: boolean;
-  startUrl?: string;
-  signInUrl?: string;
-  
-  check(): Promise<boolean>;
-  signIn<D, T>(config?: any): Promise<T>;
-  signUp<D, T>(config?: any): Promise<T>;
-  signOut(): Promise<void>;
-  refreshToken<T>(args?: T): Promise<void>;
-}
 ```
-
-### StrategyHelper
-
-Helper class for managing authentication state.
-
-#### Methods
-
-- `clearStorage(): void` - Clear local storage
-- `reset(): void` - Reset authentication state
-
-## License
-
-ISC 

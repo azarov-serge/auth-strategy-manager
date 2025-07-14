@@ -1,7 +1,7 @@
 # Auth Strategy Manager
 
-[![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![npm version](https://badge.fury.io/js/@auth-strategy-manager/core.svg)](https://badge.fury.io/js/@auth-strategy-manager/core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Гибкая библиотека для управления аутентификацией с поддержкой множественных стратегий. Позволяет легко интегрировать различные методы аутентификации (Keycloak, REST API, кастомные) в единый интерфейс.
 
@@ -14,19 +14,17 @@
 
 Этот репозиторий содержит следующие пакеты:
 
-- Основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
-- **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Стратегия Keycloak
-- **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - Стратегия REST API
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** — основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
+- **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** — стратегия Keycloak
+- **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** — стратегия REST API
 
 ## 🚀 Быстрый старт
 
 ### Установка основного пакета
 
 ```bash
-npm install auth-strategy-manager
+npm install @auth-strategy-manager/core
 ```
-
-> Этот meta-package автоматически установит `@auth-strategy-manager/core`.
 
 ### Установка с Keycloak стратегией
 
@@ -153,23 +151,23 @@ const isAuthenticated = await authManager.check();
 
 Содержит основные классы и интерфейсы:
 
-- `AuthStrategyManager` - Главный класс менеджера
-- `Strategy` - Интерфейс для всех стратегий
-- `StrategyHelper` - Вспомогательный класс для управления состоянием
+- `AuthStrategyManager` — главный класс менеджера
+- `Strategy` — интерфейс для всех стратегий
+- `StrategyHelper` — вспомогательный класс для управления состоянием
 - Классы ошибок и константы
 
 ### Пакет Keycloak (@auth-strategy-manager/keycloak)
 
 Предоставляет интеграцию с Keycloak:
 
-- `KeycloakStrategy` - Стратегия аутентификации Keycloak
+- `KeycloakStrategy` — стратегия аутентификации Keycloak
 - Типы конфигурации для Keycloak
 
 ### Пакет REST (@auth-strategy-manager/rest)
 
 Предоставляет интеграцию с REST API:
 
-- `RestStrategy` - Стратегия аутентификации REST API
+- `RestStrategy` — стратегия аутентификации REST API
 - Типы конфигурации для REST
 
 ## 📖 Документация
@@ -207,7 +205,7 @@ npm run publish:rest
 
 ## 📝 Лицензия
 
-ISC License
+MIT License
 
 ## 🤝 Вклад в проект
 

@@ -13,14 +13,6 @@
 npm install @auth-strategy-manager/core
 ```
 
-или через meta-package:
-
-```bash
-npm install auth-strategy-manager
-```
-
-> Этот meta-package автоматически установит `@auth-strategy-manager/core`.
-
 ## Использование
 
 ```typescript
