@@ -14,7 +14,7 @@
 
 Этот репозиторий содержит следующие пакеты:
 
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Основной менеджер стратегий аутентификации
+- Основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Стратегия Keycloak
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - Стратегия REST API
 

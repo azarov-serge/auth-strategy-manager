@@ -55,6 +55,7 @@ export class KeycloakStrategy implements Strategy {
 
     if (isAuthenticated) {
       this.helper.activeStrategyName = this.name;
+      await this.signIn();
     }
 
     return isAuthenticated;

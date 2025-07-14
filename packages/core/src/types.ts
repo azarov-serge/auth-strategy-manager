@@ -18,7 +18,6 @@ export type Strategy = {
 export type AuthStrategyManagerInterface = {
   strategiesCount: number;
   strategy: Strategy;
-  isKeycloak: boolean;
   startUrl: string | undefined;
 
   check: () => Promise<boolean>;
