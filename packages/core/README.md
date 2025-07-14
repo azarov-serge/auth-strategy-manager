@@ -13,6 +13,14 @@ Core authentication strategy manager - the foundation for all authentication str
 npm install @auth-strategy-manager/core
 ```
 
+or via meta-package:
+
+```bash
+npm install auth-strategy-manager
+```
+
+> The meta-package will automatically install `@auth-strategy-manager/core` for you.
+
 ## Usage
 
 ```typescript

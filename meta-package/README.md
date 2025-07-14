@@ -23,8 +23,10 @@ This repository contains the following packages:
 ### Install Core Package
 
 ```bash
-npm install @auth-strategy-manager/core
+npm install auth-strategy-manager
 ```
+
+> This meta-package will automatically install `@auth-strategy-manager/core` for you.
 
 ### Install with Keycloak Strategy
 

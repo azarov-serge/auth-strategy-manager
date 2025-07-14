@@ -13,6 +13,14 @@
 npm install @auth-strategy-manager/keycloak @auth-strategy-manager/core keycloak-js
 ```
 
+или через meta-package:
+
+```bash
+npm install auth-strategy-manager @auth-strategy-manager/keycloak keycloak-js
+```
+
+> Этот meta-package автоматически установит `@auth-strategy-manager/core`.
+
 ## Использование
 
 ```typescript

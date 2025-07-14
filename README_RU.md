@@ -23,8 +23,10 @@
 ### Установка основного пакета
 
 ```bash
-npm install @auth-strategy-manager/core
+npm install auth-strategy-manager
 ```
+
+> Этот meta-package автоматически установит `@auth-strategy-manager/core`.
 
 ### Установка с Keycloak стратегией
 
