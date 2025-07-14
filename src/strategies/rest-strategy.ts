@@ -9,6 +9,7 @@ type UrlName = 'check' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
 type Config = Record<UrlName, UrlConfig> & {
   name?: string;
   tokenKey?: string;
+  /** URL for redirecting to the authorization page */
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
   getToken?: (response: unknown, url?: string) => string;

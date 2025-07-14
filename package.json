@@ -2,8 +2,11 @@
   "name": "auth-strategy-manager",
   "version": "1.0.0",
   "description": "Authorization utility based on strategies for flexible authentication management",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "format": "npx prettier \"src/**/*.{js,jsx,ts,tsx}\" --write",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -38,15 +41,15 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/auth-strategy-manager.git"
+    "url": "git+https://github.com/azarov-serge/auth-strategy-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/auth-strategy-manager/issues"
+    "url": "https://github.com/azarov-serge/auth-strategy-manager/issues"
   },
-  "homepage": "https://github.com/your-username/auth-strategy-manager#readme",
+  "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme",
   "files": [
-    "src/**/*",
+    "dist/**/*",
     "README.md"
   ],
-  "types": "src/index.ts"
+  "types": "dist/index.d.ts"
 }

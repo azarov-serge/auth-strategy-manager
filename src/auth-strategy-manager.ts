@@ -1,5 +1,5 @@
-import { CertError, NetworkError } from './errors';
-import { CERT_ERROR_CODE, networkErrors } from './constants';
+import { CertError, NetworkError, Timeout3rdPartyError } from './errors';
+import { CERT_ERROR_CODE, NETWORK_ERROR_CODE, TIMEOUT_3RD_PARTY_ERROR_CODE } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
 import { EmptyStrategy, KeycloakStrategy } from './strategies';
 
@@ -80,9 +80,16 @@ export class AuthStrategyManager extends StrategyHelper implements AuthStrategyM
 
       if (
         active.status === 'rejected' &&
-        networkErrors.includes(active.reason?.code ?? active?.reason?.message)
+        (active.reason?.code ?? active?.reason?.message) === NETWORK_ERROR_CODE
       ) {
         throw new NetworkError(active?.reason?.message);
+      }
+
+      if (
+        active.status === 'rejected' &&
+        (active.reason?.code ?? active?.reason?.message) === TIMEOUT_3RD_PARTY_ERROR_CODE
+      ) {
+        throw new Timeout3rdPartyError(active?.reason?.message);
       }
 
       if (active.status === 'rejected' && active.reason?.code === CERT_ERROR_CODE) {

@@ -13,7 +13,7 @@
     "skipLibCheck": true, // Skip type checking of declaration files (.d.ts)
     "esModuleInterop": true, // Creates __importStar and __importDefault helpers for compatibility with the Babel
     "allowSyntheticDefaultImports": true, // allows import w/o default prop
-    "strict": true, // Еnable all of the strict mode family options
+    "strict": true, // Enable all of the strict mode family options
     "forceConsistentCasingInFileNames": true, // Force consistent casing in file names
     "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch statements
     "module": "CommonJS", // Sets the module system for the program. Also it's required when use outFile option.
@@ -24,7 +24,7 @@
     "noImplicitThis": true, // Raise error on "this" expressions with an implied "any" type
     "noUnusedLocals": true, // Raise errors on unused local variables
     "noUnusedParameters": true, // Report errors on unused parameters
-    "noEmit": true, // Do not emit compiler output files like JavaScript source code, source-maps or declarations
+    "outDir": "./dist", // Output directory for compiled files
     "experimentalDecorators": true /* Enables experimental support for ES7 decorators. */,
     "emitDecoratorMetadata": true /* Enables experimental support for emitting type metadata for decorators. */,
     "jsx": "react",
