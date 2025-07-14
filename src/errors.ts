@@ -34,3 +34,12 @@ export class NetworkError extends ResponseError {
     });
   }
 }
+
+export class Timeout3rdPartyError extends ResponseError {
+  constructor(message?: string) {
+    super({
+      status: 0,
+      message: message ?? 'Timeout when waiting for 3rd party check iframe message.',
+    });
+  }
+}

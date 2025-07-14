@@ -1,9 +1,12 @@
 {
-  "name": "authorizer",
+  "name": "auth-strategy-manager",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/index.ts",
+  "description": "Authorization utility based on strategies for flexible authentication management",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "format": "npx prettier \"src/**/*.{js,jsx,ts,tsx}\" --write",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -23,7 +26,30 @@
     "axios": ">=1.5.1",
     "keycloak-js": "24.0.1"
   },
-  "keywords": [],
+  "keywords": [
+    "authentication",
+    "authorization",
+    "strategy",
+    "keycloak",
+    "rest",
+    "auth",
+    "login",
+    "jwt",
+    "token"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azarov-serge/auth-strategy-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/azarov-serge/auth-strategy-manager/issues"
+  },
+  "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "types": "dist/index.d.ts"
 }

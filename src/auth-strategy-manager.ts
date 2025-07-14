@@ -1,9 +1,9 @@
-import { CertError, NetworkError } from './errors';
-import { CERT_ERROR_CODE, networkErrors } from './constants';
+import { CertError, NetworkError, Timeout3rdPartyError } from './errors';
+import { CERT_ERROR_CODE, NETWORK_ERROR_CODE, TIMEOUT_3RD_PARTY_ERROR_CODE } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
 import { EmptyStrategy, KeycloakStrategy } from './strategies';
 
-import { AuthorizerStrategies, AuthorizerInterface, Strategy } from './types';
+import { AuthStrategyManagerStrategies, AuthStrategyManagerInterface, Strategy } from './types';
 
 const emptyStrategy = new EmptyStrategy();
 const protocol = window.location.protocol;
@@ -11,10 +11,10 @@ const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
 
 const startUrl = `${protocol}//${baseUrl}`;
 
-export class Authorizer extends StrategyHelper implements AuthorizerInterface {
+export class AuthStrategyManager extends StrategyHelper implements AuthStrategyManagerInterface {
   public readonly strategiesCount: number;
 
-  private strategies: AuthorizerStrategies;
+  private strategies: AuthStrategyManagerStrategies;
   private readonly helper: StrategyHelper;
 
   constructor(strategies: Strategy[]) {
@@ -22,7 +22,7 @@ export class Authorizer extends StrategyHelper implements AuthorizerInterface {
 
     this.helper = strategyHelper;
     this.strategiesCount = strategies.length;
-    this.strategies = strategies.reduce<AuthorizerStrategies>((acc, strategy) => {
+    this.strategies = strategies.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
       acc[strategy.name] = strategy;
 
       return acc;
@@ -80,9 +80,16 @@ export class Authorizer extends StrategyHelper implements AuthorizerInterface {
 
       if (
         active.status === 'rejected' &&
-        networkErrors.includes(active.reason?.code ?? active?.reason?.message)
+        (active.reason?.code ?? active?.reason?.message) === NETWORK_ERROR_CODE
       ) {
         throw new NetworkError(active?.reason?.message);
+      }
+
+      if (
+        active.status === 'rejected' &&
+        (active.reason?.code ?? active?.reason?.message) === TIMEOUT_3RD_PARTY_ERROR_CODE
+      ) {
+        throw new Timeout3rdPartyError(active?.reason?.message);
       }
 
       if (active.status === 'rejected' && active.reason?.code === CERT_ERROR_CODE) {
@@ -94,7 +101,7 @@ export class Authorizer extends StrategyHelper implements AuthorizerInterface {
   };
 
   public setStrategies = async (strategies: Strategy[]): Promise<void> => {
-    this.strategies = strategies.reduce<AuthorizerStrategies>((acc, strategy) => {
+    this.strategies = strategies.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
       acc[strategy.name] = strategy;
 
       return acc;
