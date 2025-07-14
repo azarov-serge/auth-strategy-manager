@@ -1,6 +1,6 @@
 # Auth Strategy Manager
 
-[![npm version](https://badge.fury.io/js/auth-strategy-manager-meta.svg)](https://badge.fury.io/js/auth-strategy-manager-meta)
+[![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Гибкая библиотека для управления аутентификацией с поддержкой множественных стратегий. Позволяет легко интегрировать различные методы аутентификации (Keycloak, REST API, кастомные) в единый интерфейс.
@@ -29,7 +29,7 @@ npm install @auth-strategy-manager/core
 ### Вариант 2: Установка через Meta Package
 
 ```bash
-npm install auth-strategy-manager-meta
+npm install auth-strategy-manager
 ```
 
 > Этот meta-package автоматически установит `@auth-strategy-manager/core`. Оба варианта предоставляют одинаковую функциональность.
