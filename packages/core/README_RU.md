@@ -27,12 +27,12 @@ class CustomStrategy extends StrategyHelper implements Strategy {
     return true;
   };
   
-  signIn = async <D, T>(config?: any): Promise<T> => {
+  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика входа
     return {} as T;
   };
   
-  signUp = async <D, T>(config?: any): Promise<T> => {
+  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика регистрации
     return {} as T;
   };
@@ -81,8 +81,8 @@ interface Strategy {
   signInUrl?: string;
   
   check(): Promise<boolean>;
-  signIn<D, T>(config?: any): Promise<T>;
-  signUp<D, T>(config?: any): Promise<T>;
+  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
   signOut(): Promise<void>;
   refreshToken<T>(args?: T): Promise<void>;
 }

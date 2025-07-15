@@ -1,7 +1,7 @@
 # Auth Strategy Manager
 
 [![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 A flexible library for managing authentication with support for multiple strategies. Allows easy integration of various authentication methods (Keycloak, REST API, custom) into a unified interface.
 
@@ -14,26 +14,17 @@ A flexible library for managing authentication with support for multiple strateg
 
 This repository contains the following packages:
 
-- **[auth-strategy-manager](https://www.npmjs.com/package/auth-strategy-manager)** (v1.0.9) - Meta package that automatically installs core
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** (v1.0.4) - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** (v1.0.3) - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** (v1.0.0) - Keycloak strategy
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** (v1.0.0) - REST API strategy
 
 ## 🚀 Quick Start
 
-### Option 1: Install via Meta Package (Recommended)
-
-```bash
-npm install auth-strategy-manager
-```
-
-### Option 2: Install Core Package Directly
+### Install Core Package
 
 ```bash
 npm install @auth-strategy-manager/core
 ```
-
-> Both options provide the same functionality. The meta-package automatically installs `@auth-strategy-manager/core`.
 
 ### Install with Keycloak Strategy
 
@@ -58,8 +49,6 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-st
 ### Basic Usage with Core Only
 
 ```typescript
-import { AuthStrategyManager, Strategy, StrategyHelper } from 'auth-strategy-manager';
-// or
 import { AuthStrategyManager, Strategy, StrategyHelper } from '@auth-strategy-manager/core';
 
 // Create custom strategy
@@ -71,12 +60,12 @@ class CustomStrategy extends StrategyHelper implements Strategy {
     return true;
   };
   
-  signIn = async <T>(config?: unknown): Promise<T> => {
+  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Your sign in logic
     return {} as T;
   };
   
-  signUp = async <T>(config?: unknown): Promise<T> => {
+  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Your sign up logic
     return {} as T;
   };
@@ -121,6 +110,7 @@ import { RestStrategy } from '@auth-strategy-manager/rest';
 const restStrategy = new RestStrategy({
   check: { url: '/api/auth/check', method: 'GET' },
   signIn: { url: '/api/auth/login', method: 'POST' },
+  signUp: { url: '/api/auth/register', method: 'POST' },
   signOut: { url: '/api/auth/logout', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
@@ -146,6 +136,7 @@ const keycloakStrategy = new KeycloakStrategy({
 const restStrategy = new RestStrategy({
   check: { url: '/api/auth/check', method: 'GET' },
   signIn: { url: '/api/auth/login', method: 'POST' },
+  signUp: { url: '/api/auth/register', method: 'POST' },
   signOut: { url: '/api/auth/logout', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
@@ -157,14 +148,6 @@ const isAuthenticated = await authManager.check();
 ```
 
 ## 🏗️ Architecture
-
-### Meta Package (auth-strategy-manager)
-
-Convenient entry point that automatically installs core:
-
-- Re-exports all types and classes from core
-- Provides TypeScript support out of the box
-- Simplifies installation and usage
 
 ### Core Package (@auth-strategy-manager/core)
 
@@ -191,7 +174,6 @@ Provides REST API integration:
 
 ## 📖 Documentation
 
-- [Meta Package Documentation](https://www.npmjs.com/package/auth-strategy-manager)
 - [Core Package Documentation](https://www.npmjs.com/package/@auth-strategy-manager/core)
 - [Keycloak Strategy Documentation](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)
 - [REST Strategy Documentation](https://www.npmjs.com/package/@auth-strategy-manager/rest)
@@ -225,7 +207,7 @@ npm run publish:rest
 
 ## 📝 License
 
-MIT License
+ISC License
 
 ## 🤝 Contributing
 
@@ -242,3 +224,21 @@ If you have questions or issues, create an issue in the GitHub repository.
 ---
 
 **Auth Strategy Manager** - make authentication simple and flexible! 🔐 
+
+### Strategy Interface
+
+```typescript
+interface Strategy {
+  name: string;
+  token?: string;
+  isAuthenticated?: boolean;
+  startUrl?: string;
+  signInUrl?: string;
+  
+  check(): Promise<boolean>;
+  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signOut(): Promise<void>;
+  refreshToken<T>(args?: T): Promise<void>;
+}
+``` 

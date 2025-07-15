@@ -61,8 +61,7 @@ export class KeycloakStrategy implements Strategy {
     return isAuthenticated;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  signIn = async <_D, T>(): Promise<T> => {
+  signIn = async <T>(): Promise<T> => {
     this.helper.activeStrategyName = this.name;
 
     if (this.helper.isAuthenticated) {
@@ -84,8 +83,7 @@ export class KeycloakStrategy implements Strategy {
     return undefined as T;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  signUp = async <_D, T>(): Promise<T> => {
+  signUp = async <T>(): Promise<T> => {
     return undefined as T;
   };
 

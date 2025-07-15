@@ -41,14 +41,14 @@ const restStrategy = new RestStrategy({
   refresh: { url: '/auth/refresh', method: 'POST' },
   
   // Custom token extraction function
-  getToken: (response: any) => response.data?.access_token || response.access_token
+  getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token
 });
 
 // Use with strategy manager
 const authManager = new AuthStrategyManager([restStrategy]);
 
 // Sign in with custom data
-const loginResult = await restStrategy.signIn({
+const loginResult = await restStrategy.signIn<unknown, AxiosRequestConfig>({
   data: {
     username: 'user@example.com',
     password: 'password123'
@@ -106,8 +106,8 @@ constructor(config: RestConfig)
 #### Methods
 
 - `check(): Promise<boolean>` - Check authentication
-- `signIn<D, T>(config?: AxiosRequestConfig<D>): Promise<T>` - Sign in user
-- `signUp<D, T>(config?: AxiosRequestConfig<D>): Promise<T>` - Sign up user
+- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign in user
+- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign up user
 - `signOut(): Promise<void>` - Sign out user
 - `refreshToken(): Promise<void>` - Refresh token
 

@@ -86,8 +86,8 @@ constructor(config: KeycloakConfig)
 #### Methods
 
 - `check(): Promise<boolean>` - Check authentication
-- `signIn<T>(): Promise<T>` - Sign in user
-- `signUp<T>(): Promise<T>` - Sign up user (not implemented)
+- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign in user
+- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign up user (not implemented)
 - `signOut(): Promise<void>` - Sign out user
 - `refreshToken<T>(sec?: T): Promise<void>` - Refresh token
 

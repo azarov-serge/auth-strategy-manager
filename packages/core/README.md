@@ -27,12 +27,12 @@ class CustomStrategy extends StrategyHelper implements Strategy {
     return true;
   };
   
-  signIn = async <D, T>(config?: any): Promise<T> => {
+  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Your sign in logic
     return {} as T;
   };
   
-  signUp = async <D, T>(config?: any): Promise<T> => {
+  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Your sign up logic
     return {} as T;
   };
@@ -72,4 +72,31 @@ constructor(strategies: Strategy[])
 
 ### Strategy Interface
 
+```typescript
+interface Strategy {
+  name: string;
+  token?: string;
+  isAuthenticated?: boolean;
+  startUrl?: string;
+  signInUrl?: string;
+  
+  check(): Promise<boolean>;
+  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signOut(): Promise<void>;
+  refreshToken<T>(args?: T): Promise<void>;
+}
 ```
+
+### StrategyHelper
+
+Helper class for managing authentication state.
+
+#### Methods
+
+- `clearStorage(): void` - Clear local storage
+- `reset(): void` - Reset authentication state
+
+## License
+
+ISC

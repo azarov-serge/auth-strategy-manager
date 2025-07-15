@@ -72,7 +72,7 @@ export class RestStrategy implements Strategy {
     return isAuthenticated;
   };
 
-  signIn = async <D, T>(config?: AxiosRequestConfig<D>): Promise<T> => {
+  signIn = async <T, D>(config?: AxiosRequestConfig<D>): Promise<T> => {
     if (!this.urls.signIn) {
       throw new Error('Sign in URL is not defined');
     }
@@ -88,7 +88,7 @@ export class RestStrategy implements Strategy {
     return response as T;
   };
 
-  signUp = async <D, T>(config?: AxiosRequestConfig<D>): Promise<T> => {
+  signUp = async <T, D>(config?: AxiosRequestConfig<D>): Promise<T> => {
     if (!this.urls.signUp) {
       throw new Error('Sign up URL is not defined');
     }

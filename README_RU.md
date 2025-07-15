@@ -1,7 +1,7 @@
 # Auth Strategy Manager
 
 [![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 Гибкая библиотека для управления аутентификацией с поддержкой множественных стратегий. Позволяет легко интегрировать различные методы аутентификации (Keycloak, REST API, кастомные) в единый интерфейс.
 
@@ -14,26 +14,17 @@
 
 Этот репозиторий содержит следующие пакеты:
 
-- **[auth-strategy-manager](https://www.npmjs.com/package/auth-strategy-manager)** (v1.0.9) — Meta-package, который автоматически устанавливает core
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** (v1.0.4) — основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
-- **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** (v1.0.0) — стратегия Keycloak
-- **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** (v1.0.0) — стратегия REST API
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)**  — основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
+- **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)**  — стратегия Keycloak
+- **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)**  — стратегия REST API
 
 ## 🚀 Быстрый старт
 
-### Вариант 1: Установка через Meta Package (Рекомендуется)
-
-```bash
-npm install auth-strategy-manager
-```
-
-### Вариант 2: Установка основного пакета напрямую
+### Установка основного пакета
 
 ```bash
 npm install @auth-strategy-manager/core
 ```
-
-> Оба варианта предоставляют одинаковую функциональность. Meta-package автоматически устанавливает `@auth-strategy-manager/core`.
 
 ### Установка с Keycloak стратегией
 
@@ -58,8 +49,6 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-st
 ### Базовое использование только с core
 
 ```typescript
-import { AuthStrategyManager, Strategy, StrategyHelper } from 'auth-strategy-manager';
-// или
 import { AuthStrategyManager, Strategy, StrategyHelper } from '@auth-strategy-manager/core';
 
 // Создание кастомной стратегии
@@ -71,12 +60,12 @@ class CustomStrategy extends StrategyHelper implements Strategy {
     return true;
   };
   
-  signIn = async <T>(config?: unknown): Promise<T> => {
+  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика входа
     return {} as T;
   };
   
-  signUp = async <T>(config?: unknown): Promise<T> => {
+  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика регистрации
     return {} as T;
   };
@@ -93,6 +82,24 @@ class CustomStrategy extends StrategyHelper implements Strategy {
 
 // Использование с менеджером стратегий
 const authManager = new AuthStrategyManager([new CustomStrategy()]);
+```
+
+### Strategy Interface
+
+```typescript
+interface Strategy {
+  name: string;
+  token?: string;
+  isAuthenticated?: boolean;
+  startUrl?: string;
+  signInUrl?: string;
+  
+  check(): Promise<boolean>;
+  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signOut(): Promise<void>;
+  refreshToken<T>(args?: T): Promise<void>;
+}
 ```
 
 ### Использование Keycloak стратегии
@@ -158,14 +165,6 @@ const isAuthenticated = await authManager.check();
 
 ## 🏗️ Архитектура
 
-### Meta Package (auth-strategy-manager)
-
-Удобная точка входа, которая автоматически устанавливает core:
-
-- Ре-экспортирует все типы и классы из core
-- Предоставляет поддержку TypeScript из коробки
-- Упрощает установку и использование
-
 ### Основной пакет (@auth-strategy-manager/core)
 
 Содержит основные классы и интерфейсы:
@@ -191,7 +190,6 @@ const isAuthenticated = await authManager.check();
 
 ## 📖 Документация
 
-- [Документация Meta Package](https://www.npmjs.com/package/auth-strategy-manager)
 - [Документация основного пакета](https://www.npmjs.com/package/@auth-strategy-manager/core)
 - [Документация Keycloak стратегии](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)
 - [Документация REST стратегии](https://www.npmjs.com/package/@auth-strategy-manager/rest)
@@ -225,7 +223,7 @@ npm run publish:rest
 
 ## 📝 Лицензия
 
-MIT License
+ISC License
 
 ## 🤝 Вклад в проект
 

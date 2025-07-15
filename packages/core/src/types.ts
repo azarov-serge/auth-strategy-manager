@@ -7,8 +7,8 @@ export type Strategy = {
   startUrl?: string;
   signInUrl?: string;
   check: () => Promise<boolean>;
-  signIn: <T>(config?: unknown) => Promise<T>;
-  signUp: <T>(config?: unknown) => Promise<T>;
+  signIn: <T = unknown, D = undefined>(config?: D) => Promise<T>;
+  signUp: <T = unknown, D = undefined>(config?: D) => Promise<T>;
   signOut: () => Promise<void>;
   refreshToken: <T>(args?: T) => Promise<void>;
 };

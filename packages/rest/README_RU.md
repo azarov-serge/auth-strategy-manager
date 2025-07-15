@@ -41,14 +41,14 @@ const restStrategy = new RestStrategy({
   refresh: { url: '/auth/refresh', method: 'POST' },
   
   // Кастомная функция извлечения токена
-  getToken: (response: any) => response.data?.access_token || response.access_token
+  getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token
 });
 
 // Использование с менеджером стратегий
 const authManager = new AuthStrategyManager([restStrategy]);
 
 // Вход с кастомными данными
-const loginResult = await restStrategy.signIn({
+const loginResult = await restStrategy.signIn<unknown, AxiosRequestConfig>({
   data: {
     username: 'user@example.com',
     password: 'password123'
@@ -106,8 +106,8 @@ constructor(config: RestConfig)
 #### Методы
 
 - `check(): Promise<boolean>` - Проверка аутентификации
-- `signIn<D, T>(config?: AxiosRequestConfig<D>): Promise<T>` - Вход пользователя
-- `signUp<D, T>(config?: AxiosRequestConfig<D>): Promise<T>` - Регистрация пользователя
+- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Вход пользователя
+- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Регистрация пользователя
 - `signOut(): Promise<void>` - Выход пользователя
 - `refreshToken(): Promise<void>` - Обновление токена
 
