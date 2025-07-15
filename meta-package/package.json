@@ -1,0 +1,30 @@
+{
+  "name": "auth-strategy-manager",
+  "version": "1.0.0",
+  "description": "Meta package for auth-strategy-manager. Installs core by default.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "authentication",
+    "authorization",
+    "strategy",
+    "auth",
+    "core"
+  ],
+  "author": "azarov-serge <s.a.azarov@gmail.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azarov-serge/auth-strategy-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/azarov-serge/auth-strategy-manager/issues"
+  },
+  "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme",
+  "dependencies": {
+    "@auth-strategy-manager/core": "^1.0.5"
+  },
+  "scripts": {
+    "prepublishOnly": "cp ../README.md ./README.md && cp ../README_RU.md ./README_RU.md"
+  }
+} 
