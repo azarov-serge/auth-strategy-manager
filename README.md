@@ -14,9 +14,9 @@ A flexible library for managing authentication with support for multiple strateg
 
 This repository contains the following packages:
 
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** (v1.0.3) - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
-- **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** (v1.0.0) - Keycloak strategy
-- **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** (v1.0.0) - REST API strategy
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
+- **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Keycloak strategy
+- **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - REST API strategy
 
 ## 🚀 Quick Start
 
