@@ -3,6 +3,7 @@
   "version": "1.0.7",
   "description": "Meta package for auth-strategy-manager. Installs core by default.",
   "main": "index.js",
+  "types": "index.d.ts",
   "keywords": [
     "authentication",
     "authorization",
