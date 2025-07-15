@@ -72,35 +72,37 @@ export class RestStrategy implements Strategy {
     return isAuthenticated;
   };
 
-  signIn = async <T, D>(config?: AxiosRequestConfig<D>): Promise<T> => {
+  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     if (!this.urls.signIn) {
       throw new Error('Sign in URL is not defined');
     }
-
     const { url, method } = this.urls.signIn;
-    const response = await this.axiosInstance(url, { ...(config ?? {}), method });
+    let axiosConfig: AxiosRequestConfig = {};
+    if (config && typeof config === 'object') {
+      axiosConfig = config as AxiosRequestConfig;
+    }
+    const response = await this.axiosInstance(url, { ...axiosConfig, method });
     const token = this.extractToken(response, url);
-
     if (token) {
       this.setAuthParams(token);
     }
-
     return response as T;
   };
 
-  signUp = async <T, D>(config?: AxiosRequestConfig<D>): Promise<T> => {
+  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     if (!this.urls.signUp) {
       throw new Error('Sign up URL is not defined');
     }
-
     const { url, method } = this.urls.signUp;
-    const response = await this.axiosInstance(url, { ...(config ?? {}), method });
+    let axiosConfig: AxiosRequestConfig = {};
+    if (config && typeof config === 'object') {
+      axiosConfig = config as AxiosRequestConfig;
+    }
+    const response = await this.axiosInstance(url, { ...axiosConfig, method });
     const token = this.extractToken(response, url);
-
     if (token) {
       this.setAuthParams(token);
     }
-
     return response as T;
   };
 
