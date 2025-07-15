@@ -1,5 +1,3 @@
-import { AxiosRequestConfig } from 'axios';
-
 export type AuthStrategyManagerStrategies = Record<string, Strategy>;
 
 export type Strategy = {
@@ -9,8 +7,8 @@ export type Strategy = {
   startUrl?: string;
   signInUrl?: string;
   check: () => Promise<boolean>;
-  signIn: <D, T>(config?: AxiosRequestConfig<D>) => Promise<T>;
-  signUp: <D, T>(config?: AxiosRequestConfig<D>) => Promise<T>;
+  signIn: <T>(config?: unknown) => Promise<T>;
+  signUp: <T>(config?: unknown) => Promise<T>;
   signOut: () => Promise<void>;
   refreshToken: <T>(args?: T) => Promise<void>;
 };
