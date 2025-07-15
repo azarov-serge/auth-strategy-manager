@@ -19,31 +19,35 @@ npm install @auth-strategy-manager/core
 import { AuthStrategyManager, Strategy, StrategyHelper } from '@auth-strategy-manager/core';
 
 // Создание кастомной стратегии
-class CustomStrategy extends StrategyHelper implements Strategy {
+class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  check = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<boolean> => {
     // Ваша логика аутентификации
     return true;
   };
   
-  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика входа
     return {} as T;
   };
   
-  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика регистрации
     return {} as T;
   };
   
-  signOut = async (): Promise<void> => {
+  public signOut = async (): Promise<void> => {
     // Ваша логика выхода
     this.clearStorage();
   };
   
-  refreshToken = async <T>(args?: T): Promise<void> => {
+  public refreshToken = async <T>(args?: T): Promise<void> => {
     // Ваша логика обновления токена
+  };
+
+  public reset = (): void => {
+    // Ваша логика сброса
   };
 }
 
@@ -75,12 +79,39 @@ restStrategy.clear();
 constructor(strategies: Strategy[])
 ```
 
+Создает новый экземпляр AuthStrategyManager с предоставленными стратегиями.
+
+#### Свойства
+
+- `strategiesCount: number` - Общее количество зарегистрированных стратегий
+- `strategy: Strategy` - Текущая активная стратегия
+- `startUrl: string | undefined` - URL для перенаправления после аутентификации
+
 #### Методы
 
-- `check(): Promise<boolean>` - Проверка аутентификации
-- `setStrategies(strategies: Strategy[]): Promise<void>` - Обновление стратегий
-- `use(strategyName: string): void` - Установка активной стратегии
-- `clear(): void` - Очистка состояния аутентификации
+- `checkAuth(): Promise<boolean>` - Проверяет статус аутентификации по всем стратегиям. Возвращает true, если любая стратегия аутентифицирована.
+- `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
+- `use(strategyName: string): void` - Устанавливает активную стратегию по имени
+- `clear(): void` - Очищает состояние аутентификации и сбрасывает все стратегии
+
+#### Примеры использования
+
+```typescript
+// Создание менеджера со стратегиями
+const authManager = new AuthStrategyManager([strategy1, strategy2]);
+
+// Проверка аутентификации пользователя
+const isAuthenticated = await authManager.checkAuth();
+
+// Переключение на конкретную стратегию
+authManager.use('keycloak');
+
+// Получение текущей активной стратегии
+const currentStrategy = authManager.strategy;
+
+// Очистка всех данных аутентификации
+authManager.clear();
+```
 
 ### Strategy Interface
 
@@ -92,11 +123,12 @@ interface Strategy {
   startUrl?: string;
   signInUrl?: string;
   
-  check(): Promise<boolean>;
+  checkAuth(): Promise<boolean>;
   signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
   signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
   signOut(): Promise<void>;
   refreshToken<T>(args?: T): Promise<void>;
+  clear?(): void;
 }
 ```
 

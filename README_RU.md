@@ -49,10 +49,10 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-st
 ### Базовое использование только с core
 
 ```typescript
-import { AuthStrategyManager, Strategy, StrategyHelper } from '@auth-strategy-manager/core';
+import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 
 // Создание кастомной стратегии
-class CustomStrategy extends StrategyHelper implements Strategy {
+class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
   check = async (): Promise<boolean> => {
@@ -82,6 +82,50 @@ class CustomStrategy extends StrategyHelper implements Strategy {
 
 // Использование с менеджером стратегий
 const authManager = new AuthStrategyManager([new CustomStrategy()]);
+```
+
+### AuthStrategyManager API
+
+Главный класс для управления стратегиями аутентификации.
+
+#### Конструктор
+
+```typescript
+constructor(strategies: Strategy[])
+```
+
+Создает новый экземпляр AuthStrategyManager с предоставленными стратегиями.
+
+#### Свойства
+
+- `strategiesCount: number` - Общее количество зарегистрированных стратегий
+- `strategy: Strategy` - Текущая активная стратегия
+- `startUrl: string | undefined` - URL для перенаправления после аутентификации
+
+#### Методы
+
+- `checkAuth(): Promise<boolean>` - Проверяет статус аутентификации по всем стратегиям. Возвращает true, если любая стратегия аутентифицирована.
+- `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
+- `use(strategyName: string): void` - Устанавливает активную стратегию по имени
+- `clear(): void` - Очищает состояние аутентификации и сбрасывает все стратегии
+
+#### Примеры использования
+
+```typescript
+// Создание менеджера со стратегиями
+const authManager = new AuthStrategyManager([strategy1, strategy2]);
+
+// Проверка аутентификации пользователя
+const isAuthenticated = await authManager.checkAuth();
+
+// Переключение на конкретную стратегию
+authManager.use('keycloak');
+
+// Получение текущей активной стратегии
+const currentStrategy = authManager.strategy;
+
+// Очистка всех данных аутентификации
+authManager.clear();
 ```
 
 ### Strategy Interface

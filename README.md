@@ -49,10 +49,10 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-st
 ### Basic Usage with Core Only
 
 ```typescript
-import { AuthStrategyManager, Strategy, StrategyHelper } from '@auth-strategy-manager/core';
+import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 
 // Create custom strategy
-class CustomStrategy extends StrategyHelper implements Strategy {
+class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
   check = async (): Promise<boolean> => {
@@ -82,6 +82,50 @@ class CustomStrategy extends StrategyHelper implements Strategy {
 
 // Use with strategy manager
 const authManager = new AuthStrategyManager([new CustomStrategy()]);
+```
+
+### AuthStrategyManager API
+
+Main class for managing authentication strategies.
+
+#### Constructor
+
+```typescript
+constructor(strategies: Strategy[])
+```
+
+Creates a new AuthStrategyManager instance with the provided strategies.
+
+#### Properties
+
+- `strategiesCount: number` - Total number of registered strategies
+- `strategy: Strategy` - Currently active strategy
+- `startUrl: string | undefined` - URL to redirect after authentication
+
+#### Methods
+
+- `checkAuth(): Promise<boolean>` - Check authentication status across all strategies. Returns true if any strategy is authenticated.
+- `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
+- `use(strategyName: string): void` - Set the active strategy by name
+- `clear(): void` - Clear authentication state and reset all strategies
+
+#### Usage Examples
+
+```typescript
+// Create manager with strategies
+const authManager = new AuthStrategyManager([strategy1, strategy2]);
+
+// Check if user is authenticated
+const isAuthenticated = await authManager.checkAuth();
+
+// Switch to specific strategy
+authManager.use('keycloak');
+
+// Get current active strategy
+const currentStrategy = authManager.strategy;
+
+// Clear all authentication data
+authManager.clear();
 ```
 
 ### Using Keycloak Strategy

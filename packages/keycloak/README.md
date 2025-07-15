@@ -31,20 +31,10 @@ const keycloakStrategy = new KeycloakStrategy({
   only: false
 });
 
-// Using REST Strategy
-const restStrategy = new RestStrategy({
-  // ...
-});
-const authManager = new AuthStrategyManager([restStrategy]);
+const authManager = new AuthStrategyManager([keycloakStrategy]);
 
 // Check authentication
-const isAuthenticated = await restStrategy.checkAuth();
-
-// Sign out
-await restStrategy.signOut();
-
-// Clear state
-restStrategy.clear();
+const isAuthenticated = await keycloakStrategy.check();
 
 // Sign in
 await keycloakStrategy.signIn();
