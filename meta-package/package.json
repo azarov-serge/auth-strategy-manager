@@ -1,6 +1,6 @@
 {
   "name": "auth-strategy-manager",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Meta package for auth-strategy-manager. Installs core by default.",
   "main": "index.js",
   "types": "index.d.ts",

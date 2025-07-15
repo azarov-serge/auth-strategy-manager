@@ -12,19 +12,20 @@ const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
 const startUrl = `${protocol}//${baseUrl}`;
 
 export class AuthStrategyManager implements AuthStrategyManagerInterface {
-  public readonly strategiesCount: number;
+  public strategiesCount: number;
 
   private strategies: AuthStrategyManagerStrategies;
   private readonly helper: StrategyHelper;
 
-  constructor(strategies: Strategy[]) {
+  constructor(strategies?: Strategy[]) {
     this.helper = strategyHelper;
-    this.strategiesCount = strategies.length;
-    this.strategies = strategies.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
-      acc[strategy.name] = strategy;
+    this.strategiesCount = strategies?.length ?? 0;
+    this.strategies =
+      strategies?.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
+        acc[strategy.name] = strategy;
 
-      return acc;
-    }, {});
+        return acc;
+      }, {}) ?? {};
   }
 
   get strategy(): Strategy {
@@ -91,6 +92,7 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
   };
 
   public setStrategies = async (strategies: Strategy[]): Promise<void> => {
+    this.strategiesCount = strategies.length;
     this.strategies = strategies.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
       acc[strategy.name] = strategy;
 
