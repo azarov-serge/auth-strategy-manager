@@ -35,7 +35,7 @@ const keycloakStrategy = new KeycloakStrategy({
 const authManager = new AuthStrategyManager([keycloakStrategy]);
 
 // Проверка аутентификации
-const isAuthenticated = await authManager.check();
+const isAuthenticated = await keycloakStrategy.checkAuth();
 
 // Вход в систему
 await keycloakStrategy.signIn();

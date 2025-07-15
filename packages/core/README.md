@@ -47,8 +47,20 @@ class CustomStrategy extends StrategyHelper implements Strategy {
   };
 }
 
-// Use with strategy manager
-const authManager = new AuthStrategyManager([new CustomStrategy()]);
+// Using REST Strategy
+const restStrategy = new RestStrategy({
+  // ...
+});
+const authManager = new AuthStrategyManager([restStrategy]);
+
+// Check authentication
+const isAuthenticated = await restStrategy.checkAuth();
+
+// Sign out
+await restStrategy.signOut();
+
+// Clear state
+restStrategy.clear();
 ```
 
 ## API
