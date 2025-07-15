@@ -116,6 +116,15 @@ const restStrategy = new RestStrategy({
 });
 
 const authManager = new AuthStrategyManager([restStrategy]);
+
+// Check authentication
+const isAuthenticated = await restStrategy.checkAuth();
+
+// Sign out
+await restStrategy.signOut();
+
+// Clear state
+restStrategy.clear();
 ```
 
 ### Using Multiple Strategies

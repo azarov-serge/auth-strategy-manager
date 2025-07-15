@@ -44,16 +44,16 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
     this.helper.startUrl = url;
   }
 
-  public check = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<boolean> => {
     const strategyNames = Object.keys(this.strategies);
     const strategyName = strategyNames[0];
 
     if (strategyNames.length === 1) {
-      return await this.strategies[strategyName].check();
+      return await this.strategies[strategyName].checkAuth();
     }
 
     const actives = await Promise.allSettled(
-      strategyNames.map((strategyName) => this.strategies[strategyName].check())
+      strategyNames.map((strategyName) => this.strategies[strategyName].checkAuth())
     );
 
     let isAuthenticated = false;
@@ -105,6 +105,7 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
   };
 
   public clear = () => {
+    this.strategy.clear?.();
     this.helper.activeStrategyName = emptyStrategy.name;
     this.startUrl = startUrl;
   };

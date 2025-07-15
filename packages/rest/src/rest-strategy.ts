@@ -49,7 +49,7 @@ export class RestStrategy implements Strategy {
     return this.helper.isAuthenticated;
   }
 
-  check = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<boolean> => {
     if (!this.token) {
       return false;
     }
@@ -72,7 +72,7 @@ export class RestStrategy implements Strategy {
     return isAuthenticated;
   };
 
-  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     if (!this.urls.signIn) {
       throw new Error('Sign in URL is not defined');
     }
@@ -89,7 +89,7 @@ export class RestStrategy implements Strategy {
     return response as T;
   };
 
-  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     if (!this.urls.signUp) {
       throw new Error('Sign up URL is not defined');
     }
@@ -106,22 +106,22 @@ export class RestStrategy implements Strategy {
     return response as T;
   };
 
-  signOut = async (): Promise<void> => {
+  public signOut = async (): Promise<void> => {
     if (!this.urls.signOut) {
       throw new Error('Sign out URL is not defined');
     }
 
     const { url, method } = this.urls.signOut;
     if (!url) {
-      this.clearAuthData();
+      this.clear();
       return;
     }
 
     await this.axiosInstance(url, { method });
-    this.clearAuthData();
+    this.clear();
   };
 
-  refreshToken = async (): Promise<void> => {
+  public refreshToken = async (): Promise<void> => {
     if (!this.urls.refresh) {
       throw new Error('Refresh token URL is not defined');
     }
@@ -151,6 +151,11 @@ export class RestStrategy implements Strategy {
     this.currentRefresh = null;
   };
 
+  public clear = () => {
+    window.sessionStorage.clear();
+    this.helper.reset();
+  };
+
   private extractToken = (response: unknown, url?: string): string => {
     if (typeof response === 'string') {
       return response;
@@ -163,10 +168,5 @@ export class RestStrategy implements Strategy {
     window.sessionStorage.setItem(this.tokenKey, token);
     this.helper.activeStrategyName = this.name;
     this.helper.isAuthenticated = true;
-  };
-
-  private clearAuthData = () => {
-    window.sessionStorage.clear();
-    this.helper.reset();
   };
 }

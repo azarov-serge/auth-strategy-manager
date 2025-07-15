@@ -54,6 +54,15 @@ const loginResult = await restStrategy.signIn<unknown, AxiosRequestConfig>({
     password: 'password123'
   }
 });
+
+// Check authentication
+const isAuthenticated = await restStrategy.checkAuth();
+
+// Sign out
+await restStrategy.signOut();
+
+// Очистка состояния
+restStrategy.clear();
 ```
 
 ## Configuration
@@ -105,11 +114,12 @@ constructor(config: RestConfig)
 
 #### Methods
 
-- `check(): Promise<boolean>` - Check authentication
+- `checkAuth(): Promise<boolean>` - Check authentication
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign in user
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign up user
 - `signOut(): Promise<void>` - Sign out user
 - `refreshToken(): Promise<void>` - Refresh token
+- `clear(): void` - Clear authentication state
 
 #### Properties
 

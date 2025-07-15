@@ -41,7 +41,7 @@ export class KeycloakStrategy implements Strategy {
     return this.helper.isAuthenticated;
   }
 
-  check = async (): Promise<boolean> => {
+  checkAuth = async (): Promise<boolean> => {
     if (this.helper.isAuthenticated) {
       return true;
     }

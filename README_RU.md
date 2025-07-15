@@ -133,6 +133,15 @@ const restStrategy = new RestStrategy({
 });
 
 const authManager = new AuthStrategyManager([restStrategy]);
+
+// Проверка аутентификации
+const isAuthenticated = await restStrategy.checkAuth();
+
+// Выход из системы
+await restStrategy.signOut();
+
+// Очистка состояния
+restStrategy.clear();
 ```
 
 ### Использование множественных стратегий

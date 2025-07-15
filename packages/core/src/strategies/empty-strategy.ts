@@ -4,7 +4,7 @@ import { Strategy } from '../types';
 export class EmptyStrategy extends StrategyHelper implements Strategy {
   readonly name = 'empty';
 
-  check = async (): Promise<boolean> => {
+  checkAuth = async (): Promise<boolean> => {
     return false;
   };
 
