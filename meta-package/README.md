@@ -56,27 +56,27 @@ class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
   public checkAuth = async (): Promise<boolean> => {
-    // Your authentication logic
+    // Your authentication sign-ic
     return true;
   };
   
   public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
-    // Your sign in logic
+    // Your sign in sign-ic
     return {} as T;
   };
   
   public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
-    // Your sign up logic
+    // Your sign up sign-ic
     return {} as T;
   };
   
   public signOut = async (): Promise<void> => {
-    // Your sign out logic
+    // Your sign out sign-ic
     this.clearStorage();
   };
   
-  public  refreshToken = async <T>(args?: T): Promise<void> => {
-    // Your token refresh logic
+  public refreshToken = async <T>(args?: T): Promise<void> => {
+    // Your token refresh sign-ic
   };
 
   public clear = (): void => {
@@ -156,10 +156,10 @@ import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
-  check: { url: '/api/auth/check', method: 'GET' },
-  signIn: { url: '/api/auth/login', method: 'POST' },
-  signUp: { url: '/api/auth/register', method: 'POST' },
-  signOut: { url: '/api/auth/logout', method: 'POST' },
+  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
+  signIn: { url: '/api/auth/sign-in', method: 'POST' },
+  signUp: { url: '/api/auth/sign-up', method: 'POST' },
+  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
 
@@ -191,10 +191,10 @@ const keycloakStrategy = new KeycloakStrategy({
 });
 
 const restStrategy = new RestStrategy({
-  check: { url: '/api/auth/check', method: 'GET' },
-  signIn: { url: '/api/auth/login', method: 'POST' },
-  signUp: { url: '/api/auth/register', method: 'POST' },
-  signOut: { url: '/api/auth/logout', method: 'POST' },
+  check: { url: '/api/auth/check-auth', method: 'GET' },
+  signIn: { url: '/api/auth/sign-in', method: 'POST' },
+  signUp: { url: '/api/auth/sign-up', method: 'POST' },
+  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
 
@@ -292,7 +292,7 @@ interface Strategy {
   startUrl?: string;
   signInUrl?: string;
   
-  check(): Promise<boolean>;
+  checkAuth(): Promise<boolean>;
   signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
   signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
   signOut(): Promise<void>;
