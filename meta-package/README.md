@@ -55,28 +55,32 @@ import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  check = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<boolean> => {
     // Your authentication logic
     return true;
   };
   
-  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Your sign in logic
     return {} as T;
   };
   
-  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Your sign up logic
     return {} as T;
   };
   
-  signOut = async (): Promise<void> => {
+  public signOut = async (): Promise<void> => {
     // Your sign out logic
     this.clearStorage();
   };
   
-  refreshToken = async <T>(args?: T): Promise<void> => {
+  public  refreshToken = async <T>(args?: T): Promise<void> => {
     // Your token refresh logic
+  };
+
+  public clear = (): void => {
+    // Your clear logic
   };
 }
 
