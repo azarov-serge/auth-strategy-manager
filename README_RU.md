@@ -55,28 +55,32 @@ import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  check = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<boolean> => {
     // Ваша логика аутентификации
     return true;
   };
   
-  signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика входа
     return {} as T;
   };
   
-  signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
     // Ваша логика регистрации
     return {} as T;
   };
   
-  signOut = async (): Promise<void> => {
+  public signOut = async (): Promise<void> => {
     // Ваша логика выхода
     this.clearStorage();
   };
   
-  refreshToken = async <T>(args?: T): Promise<void> => {
+  public refreshToken = async <T>(args?: T): Promise<void> => {
     // Ваша логика обновления токена
+  };
+
+  public clear = (): void => {
+    // Ваша логика очистки
   };
 }
 
@@ -138,7 +142,7 @@ interface Strategy {
   startUrl?: string;
   signInUrl?: string;
   
-  check(): Promise<boolean>;
+  checkAuth(): Promise<boolean>;
   signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
   signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
   signOut(): Promise<void>;
@@ -170,9 +174,9 @@ import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
-  check: { url: '/api/auth/check', method: 'GET' },
-  signIn: { url: '/api/auth/login', method: 'POST' },
-  signOut: { url: '/api/auth/logout', method: 'POST' },
+  checkAuth: { url: '/api/auth/checkAuth', method: 'GET' },
+  signIn: { url: '/api/auth/sign-in', method: 'POST' },
+  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
 
@@ -204,16 +208,16 @@ const keycloakStrategy = new KeycloakStrategy({
 });
 
 const restStrategy = new RestStrategy({
-  check: { url: '/api/auth/check', method: 'GET' },
-  signIn: { url: '/api/auth/login', method: 'POST' },
-  signOut: { url: '/api/auth/logout', method: 'POST' },
+  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
+  signIn: { url: '/api/auth/sign-in', method: 'POST' },
+  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy, restStrategy]);
 
 // Проверка аутентификации (попробует обе стратегии)
-const isAuthenticated = await authManager.check();
+const isAuthenticated = await authManager.checkAuth();
 ```
 
 ## 🏗️ Архитектура
@@ -281,7 +285,7 @@ ISC License
 ## 🤝 Вклад в проект
 
 1. Форкните репозиторий
-2. Создайте ветку для новой функции (`git checkout -b feature/amazing-feature`)
+2. Создайте ветку для новой функции (`git checkAuthout -b feature/amazing-feature`)
 3. Зафиксируйте изменения (`git commit -m 'Add amazing feature'`)
 4. Отправьте в ветку (`git push origin feature/amazing-feature`)
 5. Откройте Pull Request

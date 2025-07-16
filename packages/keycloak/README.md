@@ -34,7 +34,7 @@ const keycloakStrategy = new KeycloakStrategy({
 const authManager = new AuthStrategyManager([keycloakStrategy]);
 
 // Check authentication
-const isAuthenticated = await keycloakStrategy.check();
+const isAuthenticated = await keycloakStrategy.checkAuth();
 
 // Sign in
 await keycloakStrategy.signIn();
@@ -84,7 +84,7 @@ constructor(config: KeycloakConfig)
 
 #### Methods
 
-- `check(): Promise<boolean>` - Check authentication
+- `checkAuth(): Promise<boolean>` - Check authentication
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign in user
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign up user (not implemented)
 - `signOut(): Promise<void>` - Sign out user

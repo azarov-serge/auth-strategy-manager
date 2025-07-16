@@ -85,7 +85,7 @@ constructor(config: KeycloakConfig)
 
 #### Методы
 
-- `check(): Promise<boolean>` - Проверка аутентификации
+- `checkAuth(): Promise<boolean>` - Проверка аутентификации
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Вход пользователя
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Регистрация пользователя (не реализовано)
 - `signOut(): Promise<void>` - Выход пользователя

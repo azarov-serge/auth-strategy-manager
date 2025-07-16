@@ -54,11 +54,11 @@ export class RestStrategy implements Strategy {
       return false;
     }
 
-    if (!this.urls.check) {
+    if (!this.urls.checkAuth) {
       throw new Error('Check URL is not defined');
     }
 
-    const { url, method } = this.urls.check;
+    const { url, method } = this.urls.checkAuth;
     const response = await this.axiosInstance(url, { method });
 
     const token = this.extractToken(response, url);

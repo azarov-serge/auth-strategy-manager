@@ -30,14 +30,14 @@ const axiosInstance = axios.create({
 const restStrategy = new RestStrategy({
   name: 'my-rest',
   tokenKey: 'access_token',
-  signInUrl: 'https://myapp.com/login',
+  signInUrl: 'https://myapp.com/sign-in',
   axiosInstance,
   
   // URL endpoints
-  check: { url: '/auth/check', method: 'GET' },
-  signIn: { url: '/auth/login', method: 'POST' },
-  signUp: { url: '/auth/register', method: 'POST' },
-  signOut: { url: '/auth/logout', method: 'POST' },
+  checkAuth: { url: '/auth/check-auth', method: 'GET' },
+  signIn: { url: '/auth/sign-in', method: 'POST' },
+  signUp: { url: '/auth/sign-up', method: 'POST' },
+  signOut: { url: '/auth/sign-out', method: 'POST' },
   refresh: { url: '/auth/refresh', method: 'POST' },
   
   // Кастомная функция извлечения токена
@@ -91,7 +91,7 @@ type UrlConfig = {
 
 ### Параметры
 
-- `check` - Endpoint для проверки аутентификации
+- `checkAuth` - Endpoint для проверки аутентификации
 - `signIn` - Endpoint для входа пользователя
 - `signUp` - Endpoint для регистрации пользователя
 - `signOut` - Endpoint для выхода пользователя

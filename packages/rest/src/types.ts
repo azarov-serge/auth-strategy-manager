@@ -5,7 +5,7 @@ export type UrlConfig = {
   method?: AxiosRequestConfig['method'];
 };
 
-export type UrlName = 'check' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
+export type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
 
 export type Config = Record<UrlName, UrlConfig> & {
   name?: string;
