@@ -1,6 +1,6 @@
 {
   "name": "auth-strategy-manager",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Meta package for auth-strategy-manager. Installs core by default.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme",
   "dependencies": {
-    "@auth-strategy-manager/core": "^1.0.5"
+    "@auth-strategy-manager/core": "^1.0.6"
   },
   "scripts": {
     "prepublishOnly": "cp ../README.md ./README.md && cp ../README_RU.md ./README_RU.md"

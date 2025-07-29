@@ -3,7 +3,6 @@
     "target": "ES2015",
     "declaration": true,
     "sourceMap": true,
-    "rootDirs": ["src"],
     "lib": ["dom", "esnext"],
     "typeRoots": ["node_modules/@types"],
     "downlevelIteration": true,
@@ -26,11 +25,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "jsx": "react",
-    "baseUrl": "./",
-    "paths": {
-      "@auth-strategy-manager/core": ["../core/src"]
-    }
+    "baseUrl": "./"
   },
-  "include": ["src/**/*", "*.d.ts"]
+  "include": ["src/**/*"]
 } 
  

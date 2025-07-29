@@ -1,6 +1,6 @@
 {
   "name": "@auth-strategy-manager/keycloak",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Keycloak strategy for auth-strategy-manager",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,11 +14,11 @@
     "README.md"
   ],
   "dependencies": {
-    "@auth-strategy-manager/core": "^1.0.0",
-    "keycloak-js": "24.0.1"
+    "@auth-strategy-manager/core": "^1.0.6",
+    "keycloak-js": "26.2.0"
   },
   "peerDependencies": {
-    "keycloak-js": "24.0.1"
+    "keycloak-js": "26.2.0"
   },
   "keywords": [
     "authentication",
