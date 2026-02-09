@@ -17,6 +17,7 @@ This repository contains the following packages:
 - **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Keycloak strategy
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - REST API strategy
+- **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** - Supabase strategy
 
 ## 🚀 Quick Start
 
@@ -38,10 +39,16 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak keycloak
 npm install @auth-strategy-manager/core @auth-strategy-manager/rest axios
 ```
 
+### Install with Supabase Strategy
+
+```bash
+npm install @auth-strategy-manager/core @auth-strategy-manager/supabase @supabase/supabase-js
+```
+
 ### Install All Packages
 
 ```bash
-npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-strategy-manager/rest keycloak-js axios
+npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-strategy-manager/rest @auth-strategy-manager/supabase keycloak-js axios @supabase/supabase-js
 ```
 
 ## 🔧 Usage
@@ -175,6 +182,24 @@ await restStrategy.signOut();
 restStrategy.clear();
 ```
 
+### Using Supabase Strategy
+
+```typescript
+import { AuthStrategyManager } from '@auth-strategy-manager/core';
+import { SupabaseStrategy, SupabaseConfig } from '@auth-strategy-manager/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const supabaseStrategy = new SupabaseStrategy({
+  supabase,
+  name: 'supabase',
+  signInUrl: 'https://myapp.com/login',
+} satisfies SupabaseConfig);
+
+const authManager = new AuthStrategyManager([supabaseStrategy]);
+```
+
 ### Using Multiple Strategies
 
 ```typescript
@@ -229,11 +254,19 @@ Provides REST API integration:
 - `RestStrategy` - REST API authentication strategy
 - REST-specific configuration types
 
+### Supabase Package (@auth-strategy-manager/supabase)
+
+Provides Supabase integration:
+
+- `SupabaseStrategy` - Supabase authentication strategy
+- Supabase-specific configuration types
+
 ## 📖 Documentation
 
 - [Core Package Documentation](https://www.npmjs.com/package/@auth-strategy-manager/core)
 - [Keycloak Strategy Documentation](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)
 - [REST Strategy Documentation](https://www.npmjs.com/package/@auth-strategy-manager/rest)
+- [Supabase Strategy Documentation](https://www.npmjs.com/package/@auth-strategy-manager/supabase)
 
 ## 🧪 Development
 
@@ -260,6 +293,7 @@ npm run publish:all
 npm run publish:core
 npm run publish:keycloak
 npm run publish:rest
+npm run publish:supabase
 ```
 
 ## 📝 License

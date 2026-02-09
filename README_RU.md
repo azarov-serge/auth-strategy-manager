@@ -17,6 +17,7 @@
 - **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)**  — основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)**  — стратегия Keycloak
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)**  — стратегия REST API
+- **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** — стратегия Supabase
 
 ## 🚀 Быстрый старт
 
@@ -38,10 +39,16 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak keycloak
 npm install @auth-strategy-manager/core @auth-strategy-manager/rest axios
 ```
 
+### Установка с Supabase стратегией
+
+```bash
+npm install @auth-strategy-manager/core @auth-strategy-manager/supabase @supabase/supabase-js
+```
+
 ### Установка всех пакетов
 
 ```bash
-npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-strategy-manager/rest keycloak-js axios
+npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-strategy-manager/rest @auth-strategy-manager/supabase keycloak-js axios @supabase/supabase-js
 ```
 
 ## 🔧 Использование
@@ -192,6 +199,24 @@ await restStrategy.signOut();
 restStrategy.clear();
 ```
 
+### Использование Supabase стратегии
+
+```typescript
+import { AuthStrategyManager } from '@auth-strategy-manager/core';
+import { SupabaseStrategy, SupabaseConfig } from '@auth-strategy-manager/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const supabaseStrategy = new SupabaseStrategy({
+  supabase,
+  name: 'supabase',
+  signInUrl: 'https://myapp.com/login',
+} satisfies SupabaseConfig);
+
+const authManager = new AuthStrategyManager([supabaseStrategy]);
+```
+
 ### Использование множественных стратегий
 
 ```typescript
@@ -245,11 +270,19 @@ const isAuthenticated = await authManager.checkAuth();
 - `RestStrategy` — стратегия аутентификации REST API
 - Типы конфигурации для REST
 
+### Пакет Supabase (@auth-strategy-manager/supabase)
+
+Предоставляет интеграцию с Supabase:
+
+- `SupabaseStrategy` — стратегия аутентификации Supabase
+- Типы конфигурации для Supabase
+
 ## 📖 Документация
 
 - [Документация основного пакета](https://www.npmjs.com/package/@auth-strategy-manager/core)
 - [Документация Keycloak стратегии](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)
 - [Документация REST стратегии](https://www.npmjs.com/package/@auth-strategy-manager/rest)
+- [Документация Supabase стратегии](https://www.npmjs.com/package/@auth-strategy-manager/supabase)
 
 ## 🧪 Разработка
 
@@ -276,6 +309,7 @@ npm run publish:all
 npm run publish:core
 npm run publish:keycloak
 npm run publish:rest
+npm run publish:supabase
 ```
 
 ## 📝 Лицензия

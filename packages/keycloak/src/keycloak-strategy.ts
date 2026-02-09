@@ -1,4 +1,4 @@
-import Keycloak from 'keycloak-js';
+import Keycloak, { KeycloakInitOptions } from 'keycloak-js';
 import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
 import { Config } from './types';
 
@@ -9,18 +9,20 @@ export class KeycloakStrategy implements Strategy {
   readonly name: string;
   readonly keycloak: Keycloak;
   readonly only: boolean;
+  readonly init?: KeycloakInitOptions;
 
   signInUrl?: string;
 
   private readonly helper: StrategyHelper;
 
   constructor(config: Config) {
-    const { name, keycloak, loginUrl } = config;
+    const { name, keycloak, loginUrl, init } = config;
 
     this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
     this.signInUrl = loginUrl;
     this.only = config?.only ?? false;
+    this.init = init;
 
     this.keycloak = new Keycloak(keycloak);
   }
@@ -46,10 +48,12 @@ export class KeycloakStrategy implements Strategy {
       return true;
     }
 
-    const isAuthenticated = await this.keycloak.init({
-      flow: 'standard',
-      onLoad: 'check-sso',
-    });
+    const isAuthenticated = await this.keycloak.init(
+      this.init || {
+        flow: 'standard',
+        onLoad: 'check-sso',
+      },
+    );
 
     this.helper.isAuthenticated = isAuthenticated;
 
