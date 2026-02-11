@@ -29,19 +29,18 @@ const axiosInstance = axios.create({
 // Создание REST стратегии
 const restStrategy = new RestStrategy({
   name: 'my-rest',
-  tokenKey: 'access_token',
   signInUrl: 'https://myapp.com/sign-in',
   axiosInstance,
-  
-  // URL endpoints
+  accessToken: {
+    key: 'access_token',
+    storage: 'sessionStorage',
+    getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token,
+  },
   checkAuth: { url: '/auth/check-auth', method: 'GET' },
   signIn: { url: '/auth/sign-in', method: 'POST' },
   signUp: { url: '/auth/sign-up', method: 'POST' },
   signOut: { url: '/auth/sign-out', method: 'POST' },
   refresh: { url: '/auth/refresh', method: 'POST' },
-  
-  // Кастомная функция извлечения токена
-  getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token
 });
 
 // Использование с менеджером стратегий
@@ -71,22 +70,31 @@ restStrategy.clear();
 
 ```typescript
 type RestConfig = {
-  check: UrlConfig;
+  checkAuth: UrlConfig;
   signIn: UrlConfig;
   signUp: UrlConfig;
   signOut: UrlConfig;
   refresh: UrlConfig;
   name?: string;
-  tokenKey?: string;
+  accessToken: AccessTokenConfig;
+  refreshToken?: RefreshTokenConfig;
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
+};
+
+type AccessTokenConfig = {
+  key: string;
+  storage: 'sessionStorage' | 'localStorage';
   getToken?: (response: unknown, url?: string) => string;
 };
 
-type UrlConfig = {
-  url: string;
-  method?: string;
+type RefreshTokenConfig = {
+  key: string;
+  storage: 'sessionStorage' | 'localStorage';
+  getToken?: (response: unknown, url?: string) => string;
 };
+
+type UrlConfig = { url: string; method?: string };
 ```
 
 ### Параметры
@@ -97,10 +105,10 @@ type UrlConfig = {
 - `signOut` - Endpoint для выхода пользователя
 - `refresh` - Endpoint для обновления токена
 - `name` - Имя стратегии (по умолчанию: 'rest')
-- `tokenKey` - Ключ хранилища для токена (по умолчанию: 'access')
+- `accessToken` - Хранение и извлечение access токена (обязательно)
+- `refreshToken` - Опционально: хранение и извлечение refresh токена (например, access в sessionStorage, refresh в localStorage)
 - `signInUrl` - URL для перенаправления после выхода
 - `axiosInstance` - Кастомный axios инстанс
-- `getToken` - Кастомная функция для извлечения токена из ответа
 
 ## API
 
@@ -130,7 +138,7 @@ constructor(config: RestConfig)
 
 ## Хранение токенов
 
-Токены хранятся в `sessionStorage` с настроенным `tokenKey`.
+Access токен (и при необходимости refresh токен) хранятся согласно `accessToken` и `refreshToken`. Для каждого можно задать `sessionStorage` или `localStorage` отдельно.
 
 ## Лицензия
 

@@ -1,9 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
-import { Config, UrlName } from './types';
+import { AccessTokenConfig, Config, RefreshTokenConfig, StorageType, UrlName } from './types';
 
 const DEFAULT_NAME = 'rest';
-const DEFAULT_TOKEN_KEY = 'access';
+const DEFAULT_ACCESS_KEY = 'access';
+const DEFAULT_ACCESS_STORAGE: StorageType = 'sessionStorage';
 
 export class RestStrategy implements Strategy {
   public readonly name: string;
@@ -11,22 +12,29 @@ export class RestStrategy implements Strategy {
   public readonly urls: Partial<Record<UrlName, any>>;
   signInUrl?: string;
 
-  private readonly tokenKey: string;
-  private readonly getToken?: Config['getToken'];
+  private readonly accessToken: AccessTokenConfig;
+  private readonly refreshTokenConfig?: RefreshTokenConfig;
   private readonly helper: StrategyHelper;
   private currentRefresh: Promise<void> | null = null;
 
   constructor(config: Config) {
-    const { name, tokenKey, getToken, signInUrl: loginUrl, ...urls } = config;
+    const { name, accessToken, refreshToken, signInUrl: loginUrl, ...urls } = config;
 
     this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
-    this.tokenKey = tokenKey || DEFAULT_TOKEN_KEY;
-    this.getToken = getToken;
+    this.accessToken = accessToken ?? {
+      key: DEFAULT_ACCESS_KEY,
+      storage: DEFAULT_ACCESS_STORAGE,
+    };
+    this.refreshTokenConfig = refreshToken;
     this.signInUrl = loginUrl;
     this.urls = urls;
 
     this.axiosInstance = config.axiosInstance ?? axios.create();
+  }
+
+  private getStorage(type: StorageType): Storage {
+    return window[type];
   }
 
   get startUrl(): string | undefined {
@@ -38,11 +46,11 @@ export class RestStrategy implements Strategy {
   }
 
   get token(): string | undefined {
-    return window.sessionStorage.getItem(this.tokenKey) ?? undefined;
+    return this.getStorage(this.accessToken.storage).getItem(this.accessToken.key) ?? undefined;
   }
 
   set token(token: string) {
-    window.sessionStorage.setItem(this.tokenKey, token);
+    this.getStorage(this.accessToken.storage).setItem(this.accessToken.key, token);
   }
 
   get isAuthenticated(): boolean {
@@ -66,7 +74,7 @@ export class RestStrategy implements Strategy {
 
     if (isAuthenticated) {
       this.helper.activeStrategyName = this.name;
-      this.setAuthParams(token);
+      this.setAuthParams(token, this.extractRefreshToken(response, url));
     }
 
     return isAuthenticated;
@@ -84,7 +92,7 @@ export class RestStrategy implements Strategy {
     const response = await this.axiosInstance(url, { ...axiosConfig, method });
     const token = this.extractToken(response, url);
     if (token) {
-      this.setAuthParams(token);
+      this.setAuthParams(token, this.extractRefreshToken(response, url));
     }
     return response as T;
   };
@@ -101,7 +109,7 @@ export class RestStrategy implements Strategy {
     const response = await this.axiosInstance(url, { ...axiosConfig, method });
     const token = this.extractToken(response, url);
     if (token) {
-      this.setAuthParams(token);
+      this.setAuthParams(token, this.extractRefreshToken(response, url));
     }
     return response as T;
   };
@@ -144,15 +152,18 @@ export class RestStrategy implements Strategy {
     const token = this.extractToken(response, url);
 
     if (token) {
-      this.setAuthParams(token);
+      this.setAuthParams(token, this.extractRefreshToken(response, url));
     }
 
     resolver();
     this.currentRefresh = null;
   };
 
-  public clear = () => {
-    window.sessionStorage.clear();
+  public clear = (): void => {
+    this.getStorage(this.accessToken.storage).removeItem(this.accessToken.key);
+    if (this.refreshTokenConfig) {
+      this.getStorage(this.refreshTokenConfig.storage).removeItem(this.refreshTokenConfig.key);
+    }
     this.helper.reset();
   };
 
@@ -161,11 +172,24 @@ export class RestStrategy implements Strategy {
       return response;
     }
 
-    return this.getToken ? this.getToken(response, url) : '';
+    const getter = this.accessToken.getToken;
+    return getter ? getter(response, url) : '';
   };
 
-  private setAuthParams = (token: string): void => {
-    window.sessionStorage.setItem(this.tokenKey, token);
+  private extractRefreshToken = (response: unknown, url?: string): string | undefined => {
+    const getter = this.refreshTokenConfig?.getToken;
+    if (!getter) return undefined;
+    const value = getter(response, url);
+    return value || undefined;
+  };
+
+  private setAuthParams = (token: string, refreshTokenValue?: string): void => {
+    const accessStorage = this.getStorage(this.accessToken.storage);
+    accessStorage.setItem(this.accessToken.key, token);
+    if (this.refreshTokenConfig && refreshTokenValue) {
+      const refreshStorage = this.getStorage(this.refreshTokenConfig.storage);
+      refreshStorage.setItem(this.refreshTokenConfig.key, refreshTokenValue);
+    }
     this.helper.activeStrategyName = this.name;
     this.helper.isAuthenticated = true;
   };

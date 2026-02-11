@@ -1,2 +1,9 @@
 export { RestStrategy } from './rest-strategy';
-export type { Config as RestConfig, UrlConfig } from './types';
+export type {
+  AccessTokenConfig,
+  Config as RestConfig,
+  RefreshTokenConfig,
+  StorageType,
+  TokenConfig,
+  UrlConfig,
+} from './types';

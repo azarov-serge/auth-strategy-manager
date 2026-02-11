@@ -29,19 +29,18 @@ const axiosInstance = axios.create({
 // Create REST strategy
 const restStrategy = new RestStrategy({
   name: 'my-rest',
-  tokenKey: 'access_token',
   signInUrl: 'https://myapp.com/sign-in',
   axiosInstance,
-  
-  // URL endpoints
+  accessToken: {
+    key: 'access_token',
+    storage: 'sessionStorage',
+    getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token,
+  },
   checkAuth: { url: '/auth/check-auth', method: 'GET' },
   signIn: { url: '/auth/sign-in', method: 'POST' },
   signUp: { url: '/auth/sign-up', method: 'POST' },
   signOut: { url: '/auth/sign-out', method: 'POST' },
   refresh: { url: '/auth/refresh', method: 'POST' },
-  
-  // Custom token extraction function
-  getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token
 });
 
 // Use with strategy manager
@@ -61,7 +60,7 @@ const isAuthenticated = await restStrategy.checkAuth();
 // Sign out
 await restStrategy.signOut();
 
-// Очистка состояния
+// Clear state
 restStrategy.clear();
 ```
 
@@ -77,16 +76,25 @@ type RestConfig = {
   signOut: UrlConfig;
   refresh: UrlConfig;
   name?: string;
-  tokenKey?: string;
+  accessToken: AccessTokenConfig;
+  refreshToken?: RefreshTokenConfig;
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
+};
+
+type AccessTokenConfig = {
+  key: string;
+  storage: 'sessionStorage' | 'localStorage';
   getToken?: (response: unknown, url?: string) => string;
 };
 
-type UrlConfig = {
-  url: string;
-  method?: string;
+type RefreshTokenConfig = {
+  key: string;
+  storage: 'sessionStorage' | 'localStorage';
+  getToken?: (response: unknown, url?: string) => string;
 };
+
+type UrlConfig = { url: string; method?: string };
 ```
 
 ### Parameters
@@ -97,10 +105,10 @@ type UrlConfig = {
 - `signOut` - Endpoint for user sign out
 - `refresh` - Endpoint for token refresh
 - `name` - Strategy name (default: 'rest')
-- `tokenKey` - Storage key for token (default: 'access')
+- `accessToken` - Access token storage and extraction (required)
+- `refreshToken` - Optional: refresh token storage and extraction (e.g. access in sessionStorage, refresh in localStorage)
 - `signInUrl` - URL for redirect after logout
 - `axiosInstance` - Custom axios instance
-- `getToken` - Custom function for extracting token from response
 
 ## API
 
@@ -128,9 +136,9 @@ constructor(config: RestConfig)
 - `token?: string` - Current token
 - `isAuthenticated: boolean` - Authentication status
 
-## Token Storage
+## Token storage
 
-Tokens are stored in `sessionStorage` with the configured `tokenKey`.
+Access token (and optionally refresh token) are stored using the configured `accessToken` and `refreshToken` configs. Each can use `sessionStorage` or `localStorage` independently.
 
 ## License
 
