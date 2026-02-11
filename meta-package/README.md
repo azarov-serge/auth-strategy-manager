@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
-A flexible library for managing authentication with support for multiple strategies. Allows easy integration of various authentication methods (Keycloak, REST API, custom) into a unified interface.
+A flexible library for managing authentication with support for multiple strategies. Allows easy integration of various authentication methods (Keycloak, REST API, Supabase, custom) into a unified interface.
 
 ## 🌍 Documentation in Other Languages
 
@@ -63,27 +63,27 @@ class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
   public checkAuth = async (): Promise<boolean> => {
-    // Your authentication sign-ic
+    // Your authentication logic
     return true;
   };
   
   public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
-    // Your sign in sign-ic
+    // Your sign in logic
     return {} as T;
   };
   
   public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
-    // Your sign up sign-ic
+    // Your sign up logic
     return {} as T;
   };
   
   public signOut = async (): Promise<void> => {
-    // Your sign out sign-ic
+    // Your sign out logic
     this.clearStorage();
   };
   
   public refreshToken = async <T>(args?: T): Promise<void> => {
-    // Your token refresh sign-ic
+    // Your token refresh logic
   };
 
   public clear = (): void => {
@@ -110,14 +110,14 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 #### Properties
 
 - `strategiesCount: number` - Total number of registered strategies
-- `strategy: Strategy` - Currently active strategy
+- `strategy: Strategy` - Currently active strategy. When only one strategy is provided, it is used by default (no need to call `use()`).
 - `startUrl: string | undefined` - URL to redirect after authentication
 
 #### Methods
 
 - `checkAuth(): Promise<boolean>` - Check authentication status across all strategies. Returns true if any strategy is authenticated.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
-- `use(strategyName: string): void` - Set the active strategy by name
+- `use(strategyName: string): void` - Set the active strategy by name (only needed when using multiple strategies)
 - `clear(): void` - Clear authentication state and reset all strategies
 
 #### Usage Examples
@@ -192,7 +192,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const supabaseStrategy = new SupabaseStrategy({
-  supabase,
+  supabaseClient: supabase,
   name: 'supabase',
   signInUrl: 'https://myapp.com/login',
 } satisfies SupabaseConfig);
@@ -216,7 +216,7 @@ const keycloakStrategy = new KeycloakStrategy({
 });
 
 const restStrategy = new RestStrategy({
-  check: { url: '/api/auth/check-auth', method: 'GET' },
+  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
   signOut: { url: '/api/auth/sign-out', method: 'POST' },
@@ -226,7 +226,7 @@ const restStrategy = new RestStrategy({
 const authManager = new AuthStrategyManager([keycloakStrategy, restStrategy]);
 
 // Check authentication (will try both strategies)
-const isAuthenticated = await authManager.check();
+const isAuthenticated = await authManager.checkAuth();
 ```
 
 ## 🏗️ Architecture

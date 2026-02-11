@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/auth-strategy-manager.svg)](https://badge.fury.io/js/auth-strategy-manager)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
-Гибкая библиотека для управления аутентификацией с поддержкой множественных стратегий. Позволяет легко интегрировать различные методы аутентификации (Keycloak, REST API, кастомные) в единый интерфейс.
+Гибкая библиотека для управления аутентификацией с поддержкой множественных стратегий. Позволяет легко интегрировать различные методы аутентификации (Keycloak, REST API, Supabase, кастомные) в единый интерфейс.
 
 ## 🌍 Документация на других языках
 
@@ -110,14 +110,14 @@ constructor(strategies: Strategy[])
 #### Свойства
 
 - `strategiesCount: number` - Общее количество зарегистрированных стратегий
-- `strategy: Strategy` - Текущая активная стратегия
+- `strategy: Strategy` - Текущая активная стратегия. Если передана только одна стратегия, она используется по умолчанию (вызов `use()` не нужен).
 - `startUrl: string | undefined` - URL для перенаправления после аутентификации
 
 #### Методы
 
 - `checkAuth(): Promise<boolean>` - Проверяет статус аутентификации по всем стратегиям. Возвращает true, если любая стратегия аутентифицирована.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
-- `use(strategyName: string): void` - Устанавливает активную стратегию по имени
+- `use(strategyName: string): void` - Устанавливает активную стратегию по имени (нужен только при нескольких стратегиях)
 - `clear(): void` - Очищает состояние аутентификации и сбрасывает все стратегии
 
 #### Примеры использования
@@ -181,8 +181,9 @@ import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
-  checkAuth: { url: '/api/auth/checkAuth', method: 'GET' },
+  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
+  signUp: { url: '/api/auth/sign-up', method: 'POST' },
   signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' }
 });
@@ -209,7 +210,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const supabaseStrategy = new SupabaseStrategy({
-  supabase,
+  supabaseClient: supabase,
   name: 'supabase',
   signInUrl: 'https://myapp.com/login',
 } satisfies SupabaseConfig);
@@ -319,7 +320,7 @@ ISC License
 ## 🤝 Вклад в проект
 
 1. Форкните репозиторий
-2. Создайте ветку для новой функции (`git checkAuthout -b feature/amazing-feature`)
+2. Создайте ветку для новой функции (`git checkout -b feature/amazing-feature`)
 3. Зафиксируйте изменения (`git commit -m 'Add amazing feature'`)
 4. Отправьте в ветку (`git push origin feature/amazing-feature`)
 5. Откройте Pull Request
