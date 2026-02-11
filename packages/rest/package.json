@@ -1,6 +1,6 @@
 {
   "name": "@auth-strategy-manager/rest",
-  "version": "1.2.0",
+  "version": "1.1.0",
   "description": "REST API strategy for auth-strategy-manager",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
