@@ -163,11 +163,12 @@ import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
+  accessToken: { key: 'access', storage: 'sessionStorage' },
   checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
   signOut: { url: '/api/auth/sign-out', method: 'POST' },
-  refresh: { url: '/api/auth/refresh', method: 'POST' }
+  refresh: { url: '/api/auth/refresh', method: 'POST' },
 });
 
 const authManager = new AuthStrategyManager([restStrategy]);
@@ -216,11 +217,12 @@ const keycloakStrategy = new KeycloakStrategy({
 });
 
 const restStrategy = new RestStrategy({
+  accessToken: { key: 'access', storage: 'sessionStorage' },
   checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
   signOut: { url: '/api/auth/sign-out', method: 'POST' },
-  refresh: { url: '/api/auth/refresh', method: 'POST' }
+  refresh: { url: '/api/auth/refresh', method: 'POST' },
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy, restStrategy]);
