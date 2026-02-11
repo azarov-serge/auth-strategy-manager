@@ -26,9 +26,19 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
 
         return acc;
       }, {}) ?? {};
+
+    if (this.strategiesCount === 1) {
+      this.helper.activeStrategyName = Object.keys(this.strategies)[0];
+    }
   }
 
   get strategy(): Strategy {
+    const names = Object.keys(this.strategies);
+
+    if (names.length === 1) {
+      return this.strategies[names[0]];
+    }
+
     if (!this.helper.activeStrategyName || !this.strategies) {
       return emptyStrategy;
     }
@@ -98,6 +108,10 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
 
       return acc;
     }, {});
+
+    if (this.strategiesCount === 1) {
+      this.helper.activeStrategyName = Object.keys(this.strategies)[0];
+    }
   };
 
   public use = (strategyName: string): void => {
