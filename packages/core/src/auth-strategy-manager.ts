@@ -1,11 +1,9 @@
 import { CertError, NetworkError, Timeout3rdPartyError } from './errors';
 import { CERT_ERROR_CODE, NETWORK_ERROR_CODE, TIMEOUT_3RD_PARTY_ERROR_CODE } from './constants';
 import { strategyHelper, StrategyHelper } from './helpers';
-import { EmptyStrategy } from './strategies';
 
 import { AuthStrategyManagerStrategies, AuthStrategyManagerInterface, Strategy } from './types';
 
-const emptyStrategy = new EmptyStrategy();
 const protocol = window.location.protocol;
 const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
 
@@ -39,11 +37,15 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
       return this.strategies[names[0]];
     }
 
-    if (!this.helper.activeStrategyName || !this.strategies) {
-      return emptyStrategy;
+    const strategy = this.strategies[this.helper.activeStrategyName];
+
+    if (!strategy) {
+      throw new Error(
+        'No active auth strategy found. Please add at least one strategy to handle authentication.',
+      );
     }
 
-    return this.strategies[this.helper.activeStrategyName] ?? emptyStrategy;
+    return strategy;
   }
 
   get startUrl(): string | undefined {
@@ -120,7 +122,7 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
 
   public clear = () => {
     this.strategy.clear?.();
-    this.helper.activeStrategyName = emptyStrategy.name;
+    this.helper.activeStrategyName = '';
     this.startUrl = startUrl;
   };
 }
