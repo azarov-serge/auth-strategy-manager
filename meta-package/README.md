@@ -116,9 +116,15 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 #### Methods
 
 - `checkAuth(): Promise<boolean>` - Check authentication status across all strategies. Returns true if any strategy is authenticated.
+- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
+- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
+- `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.
+- `refreshToken<T>(args?: T): Promise<void>` - Proxy to the active strategy `refreshToken` (if there is an active strategy).
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
 - `use(strategyName: string): void` - Set the active strategy by name (only needed when using multiple strategies)
 - `clear(): void` - Clear authentication state and reset all strategies
+
+`AuthStrategyManager` implements the `Strategy` interface and can be used as a facade over the active strategy.
 
 #### Usage Examples
 

@@ -14,12 +14,9 @@ export type Strategy = {
   clear?: () => void;
 };
 
-export type AuthStrategyManagerInterface = {
+export type AuthStrategyManagerInterface = Omit<Strategy, 'name' | 'signInUrl'> & {
   strategiesCount: number;
   strategy: Strategy;
-  startUrl: string | undefined;
-  checkAuth: () => Promise<boolean>;
   setStrategies: (strategies: Strategy[]) => Promise<void>;
   use: (strategyName: string) => void;
-  clear: () => void;
 };

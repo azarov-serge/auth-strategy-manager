@@ -30,6 +30,18 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
     }
   }
 
+  get token(): string | undefined {
+    const strategy = this.strategies[this.helper.activeStrategyName];
+
+    return strategy?.token;
+  }
+
+  get isAuthenticated(): boolean | undefined {
+    const strategy = this.strategies[this.helper.activeStrategyName];
+
+    return strategy?.isAuthenticated;
+  }
+
   get strategy(): Strategy {
     const names = Object.keys(this.strategies);
 
@@ -41,7 +53,7 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
 
     if (!strategy) {
       throw new Error(
-        'No active auth strategy found. Please add at least one strategy to handle authentication.',
+        'No active auth strategy found. Please add at least one strategy to handle authentication.'
       );
     }
 
@@ -101,6 +113,24 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
     }
 
     return isAuthenticated;
+  };
+
+  public signIn = <T = unknown, D = undefined>(config?: D): Promise<T> =>
+    this.strategy.signIn(config);
+
+  public signUp = <T = unknown, D = undefined>(config?: D): Promise<T> =>
+    this.strategy.signUp(config);
+
+  public signOut = (): Promise<void> => this.strategy.signOut();
+
+  public refreshToken = async <T>(args?: T): Promise<void> => {
+    const strategy = this.strategies[this.helper.activeStrategyName];
+
+    if (!strategy) {
+      return;
+    }
+
+    strategy.refreshToken(args);
   };
 
   public setStrategies = async (strategies: Strategy[]): Promise<void> => {

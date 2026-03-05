@@ -84,15 +84,21 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 #### Properties
 
 - `strategiesCount: number` - Total number of registered strategies
-- `strategy: Strategy` - Currently active strategy
+- `strategy: Strategy` - Currently active strategy. When only one strategy is provided, it is used by default (no need to call `use()`).
 - `startUrl: string | undefined` - URL to redirect after authentication
 
 #### Methods
 
 - `checkAuth(): Promise<boolean>` - Check authentication status across all strategies. Returns true if any strategy is authenticated.
+- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
+- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
+- `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.
+- `refreshToken<T>(args?: T): Promise<void>` - Proxy to the active strategy `refreshToken` (if there is an active strategy).
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
-- `use(strategyName: string): void` - Set the active strategy by name
+- `use(strategyName: string): void` - Set the active strategy by name (only needed when using multiple strategies)
 - `clear(): void` - Clear authentication state and reset all strategies
+
+AuthStrategyManager implements the `Strategy` interface and can be used as a facade over the active strategy in your application code.
 
 #### Usage Examples
 

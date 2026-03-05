@@ -84,15 +84,21 @@ constructor(strategies: Strategy[])
 #### Свойства
 
 - `strategiesCount: number` - Общее количество зарегистрированных стратегий
-- `strategy: Strategy` - Текущая активная стратегия
+- `strategy: Strategy` - Текущая активная стратегия. Если передана только одна стратегия, она используется по умолчанию (вызов `use()` не нужен).
 - `startUrl: string | undefined` - URL для перенаправления после аутентификации
 
 #### Методы
 
 - `checkAuth(): Promise<boolean>` - Проверяет статус аутентификации по всем стратегиям. Возвращает true, если любая стратегия аутентифицирована.
+- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signIn` активной стратегии.
+- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signUp` активной стратегии.
+- `signOut(): Promise<void>` - Проксирует вызов `signOut` активной стратегии.
+- `refreshToken<T>(args?: T): Promise<void>` - Проксирует вызов `refreshToken` активной стратегии (если активная стратегия есть).
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
-- `use(strategyName: string): void` - Устанавливает активную стратегию по имени
+- `use(strategyName: string): void` - Устанавливает активную стратегию по имени (нужен только при нескольких стратегиях)
 - `clear(): void` - Очищает состояние аутентификации и сбрасывает все стратегии
+
+`AuthStrategyManager` реализует интерфейс `Strategy` и может использоваться как фасад над активной стратегией в коде приложения.
 
 #### Примеры использования
 
