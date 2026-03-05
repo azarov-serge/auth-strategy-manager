@@ -24,11 +24,15 @@ const keycloakStrategy = new KeycloakStrategy({
   keycloak: {
     realm: 'my-realm',
     url: 'https://keycloak.example.com',
-    clientId: 'my-client'
+    clientId: 'my-client',
   },
-  loginUrl: 'https://myapp.com/login',
+  signInUrl: 'https://myapp.com/login',
   name: 'my-keycloak',
-  only: false
+  only: false,
+  init: {
+    flow: 'standard',
+    onLoad: 'check-sso',
+  },
 });
 
 // Использование с менеджером стратегий
@@ -58,7 +62,13 @@ type KeycloakConfig = {
     url: string;
     clientId: string;
   };
-  loginUrl?: string;
+  /**
+   * Необязательные опции, передаваемые в keycloak.init.
+   * По умолчанию используется { flow: 'standard', onLoad: 'check-sso' }.
+   */
+  init?: KeycloakInitOptions;
+  /** URL для редиректа на страницу авторизации */
+  signInUrl?: string;
   name?: string;
   only?: boolean;
 };
@@ -69,7 +79,8 @@ type KeycloakConfig = {
 - `keycloak.realm` - Имя realm в Keycloak
 - `keycloak.url` - URL сервера Keycloak
 - `keycloak.clientId` - Client ID в Keycloak
-- `loginUrl` - URL для редиректа после выхода
+- `init` - Необязательные опции инициализации для `keycloak.init` (flow, onLoad и т.д.)
+- `signInUrl` - URL для редиректа после входа/выхода
 - `name` - Имя стратегии (по умолчанию: 'keycloak')
 - `only` - Если true, доступна только эта стратегия
 

@@ -16,11 +16,11 @@ export class KeycloakStrategy implements Strategy {
   private readonly helper: StrategyHelper;
 
   constructor(config: Config) {
-    const { name, keycloak, loginUrl, init } = config;
+    const { name, keycloak, signInUrl, init } = config;
 
     this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
-    this.signInUrl = loginUrl;
+    this.signInUrl = signInUrl;
     this.only = config?.only ?? false;
     this.init = init;
 
@@ -52,7 +52,7 @@ export class KeycloakStrategy implements Strategy {
       this.init || {
         flow: 'standard',
         onLoad: 'check-sso',
-      },
+      }
     );
 
     this.helper.isAuthenticated = isAuthenticated;

@@ -24,11 +24,15 @@ const keycloakStrategy = new KeycloakStrategy({
   keycloak: {
     realm: 'my-realm',
     url: 'https://keycloak.example.com',
-    clientId: 'my-client'
+    clientId: 'my-client',
   },
-  loginUrl: 'https://myapp.com/login',
+  signInUrl: 'https://myapp.com/login',
   name: 'my-keycloak',
-  only: false
+  only: false,
+  init: {
+    flow: 'standard',
+    onLoad: 'check-sso',
+  },
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy]);
@@ -57,7 +61,13 @@ type KeycloakConfig = {
     url: string;
     clientId: string;
   };
-  loginUrl?: string;
+  /**
+   * Optional options passed to keycloak.init.
+   * By default, { flow: 'standard', onLoad: 'check-sso' } is used.
+   */
+  init?: KeycloakInitOptions;
+  /** URL for redirecting to the authorization page */
+  signInUrl?: string;
   name?: string;
   only?: boolean;
 };
@@ -68,7 +78,8 @@ type KeycloakConfig = {
 - `keycloak.realm` - Keycloak realm name
 - `keycloak.url` - Keycloak server URL
 - `keycloak.clientId` - Keycloak client ID
-- `loginUrl` - URL for redirect after logout
+- `init` - Optional initialization options for `keycloak.init` (flow, onLoad, etc.)
+- `signInUrl` - URL for redirect after login/logout
 - `name` - Strategy name (default: 'keycloak')
 - `only` - If true, only this strategy is available
 

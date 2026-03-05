@@ -9,7 +9,7 @@ export type Config = {
 
   init?: KeycloakInitOptions;
 
-  loginUrl?: string;
+  signInUrl?: string;
   name?: string;
   only?: boolean;
 };
