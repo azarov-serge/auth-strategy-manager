@@ -18,7 +18,7 @@ export class RestStrategy implements Strategy {
   private currentRefresh: Promise<void> | null = null;
 
   constructor(config: Config) {
-    const { name, accessToken, refreshToken, signInUrl: loginUrl, ...urls } = config;
+    const { name, accessToken, refreshToken, signInUrl, ...urls } = config;
 
     this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
@@ -27,7 +27,7 @@ export class RestStrategy implements Strategy {
       storage: DEFAULT_ACCESS_STORAGE,
     };
     this.refreshTokenConfig = refreshToken;
-    this.signInUrl = loginUrl;
+    this.signInUrl = signInUrl;
     this.urls = urls;
 
     this.axiosInstance = config.axiosInstance ?? axios.create();
