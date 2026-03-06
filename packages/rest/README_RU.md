@@ -76,21 +76,31 @@ type RestConfig = {
   signOut: UrlConfig;
   refresh: UrlConfig;
   name?: string;
-  accessToken: AccessTokenConfig;
+  accessToken?: AccessTokenConfig;
   refreshToken?: RefreshTokenConfig;
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
 };
 
 type AccessTokenConfig = {
+  /** Ключ в хранилище для access токена */
   key: string;
-  storage: 'sessionStorage' | 'localStorage';
+  /** Тип встроенного хранилища, используемый реализацией по умолчанию */
+  storageType: 'sessionStorage' | 'localStorage';
+  /** Необязательная своя реализация Storage (например, in-memory, namespaced) */
+  storage?: Storage;
+  /** Функция извлечения access токена из ответа API */
   getToken?: (response: unknown, url?: string) => string;
 };
 
 type RefreshTokenConfig = {
+  /** Ключ в хранилище для refresh токена */
   key: string;
-  storage: 'sessionStorage' | 'localStorage';
+  /** Тип встроенного хранилища, используемый реализацией по умолчанию */
+  storageType: 'sessionStorage' | 'localStorage';
+  /** Необязательная своя реализация Storage (например, in-memory, namespaced) */
+  storage?: Storage;
+  /** Функция извлечения refresh токена из ответа API */
   getToken?: (response: unknown, url?: string) => string;
 };
 
@@ -105,8 +115,8 @@ type UrlConfig = { url: string; method?: string };
 - `signOut` - Endpoint для выхода пользователя
 - `refresh` - Endpoint для обновления токена
 - `name` - Имя стратегии (по умолчанию: 'rest')
-- `accessToken` - Хранение и извлечение access токена (обязательно)
-- `refreshToken` - Опционально: хранение и извлечение refresh токена (например, access в sessionStorage, refresh в localStorage)
+- `accessToken` - Конфигурация access токена: `key`, `storageType` (`'sessionStorage' | 'localStorage'`), опциональные `storage` (любое кастомное хранилище, реализующее интерфейс `Storage`, например in-memory или обёртка над localStorage/sessionStorage) и `getToken`. Если не задан, по умолчанию используется `{ key: 'access', storageType: 'sessionStorage' }`.
+- `refreshToken` - Опциональная конфигурация refresh токена: `key`, `storageType`, опциональные `storage` (любое кастомное `Storage`‑хранилище) и `getToken` (например, access в sessionStorage, refresh в localStorage)
 - `signInUrl` - URL для перенаправления после выхода
 - `axiosInstance` - Кастомный axios инстанс
 

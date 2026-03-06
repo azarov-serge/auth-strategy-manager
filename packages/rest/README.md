@@ -76,21 +76,31 @@ type RestConfig = {
   signOut: UrlConfig;
   refresh: UrlConfig;
   name?: string;
-  accessToken: AccessTokenConfig;
+  accessToken?: AccessTokenConfig;
   refreshToken?: RefreshTokenConfig;
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
 };
 
 type AccessTokenConfig = {
+  /** Storage key used for access token */
   key: string;
-  storage: 'sessionStorage' | 'localStorage';
+  /** Built-in storage type used by default implementation */
+  storageType: 'sessionStorage' | 'localStorage';
+  /** Optional custom Storage implementation (e.g. in-memory, namespaced) */
+  storage?: Storage;
+  /** Extract access token from API response */
   getToken?: (response: unknown, url?: string) => string;
 };
 
 type RefreshTokenConfig = {
+  /** Storage key used for refresh token */
   key: string;
-  storage: 'sessionStorage' | 'localStorage';
+  /** Built-in storage type used by default implementation */
+  storageType: 'sessionStorage' | 'localStorage';
+  /** Optional custom Storage implementation (e.g. in-memory, namespaced) */
+  storage?: Storage;
+  /** Extract refresh token from API response */
   getToken?: (response: unknown, url?: string) => string;
 };
 
@@ -105,8 +115,8 @@ type UrlConfig = { url: string; method?: string };
 - `signOut` - Endpoint for user sign out
 - `refresh` - Endpoint for token refresh
 - `name` - Strategy name (default: 'rest')
-- `accessToken` - Access token storage and extraction (required)
-- `refreshToken` - Optional: refresh token storage and extraction (e.g. access in sessionStorage, refresh in localStorage)
+- `accessToken` - Access token config: `key`, `storageType` (`'sessionStorage' | 'localStorage'`), optional `storage` (any custom implementation of the `Storage` interface, e.g. in-memory, namespaced, or the built-in storages), and `getToken`. If omitted, `{ key: 'access', storageType: 'sessionStorage' }` is used by default.
+- `refreshToken` - Optional refresh token config: `key`, `storageType`, optional `storage` (any custom `Storage` implementation), and `getToken` (e.g. access in sessionStorage, refresh in localStorage)
 - `signInUrl` - URL for redirect after logout
 - `axiosInstance` - Custom axios instance
 

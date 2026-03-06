@@ -5,6 +5,7 @@ import { AccessTokenConfig, Config, RefreshTokenConfig, StorageType, UrlName } f
 const DEFAULT_NAME = 'rest';
 const DEFAULT_ACCESS_KEY = 'access';
 const DEFAULT_ACCESS_STORAGE: StorageType = 'sessionStorage';
+const DEFAULT_REFRESH_STORAGE: StorageType = 'sessionStorage';
 
 export class RestStrategy implements Strategy {
   public readonly name: string;
@@ -12,7 +13,7 @@ export class RestStrategy implements Strategy {
   public readonly urls: Partial<Record<UrlName, any>>;
   signInUrl?: string;
 
-  private readonly accessToken: AccessTokenConfig;
+  private readonly accessTokenConfig: AccessTokenConfig;
   private readonly refreshTokenConfig?: RefreshTokenConfig;
   private readonly helper: StrategyHelper;
   private currentRefresh: Promise<void> | null = null;
@@ -22,19 +23,24 @@ export class RestStrategy implements Strategy {
 
     this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
-    this.accessToken = accessToken ?? {
-      key: DEFAULT_ACCESS_KEY,
-      storage: DEFAULT_ACCESS_STORAGE,
+    this.accessTokenConfig = {
+      key: accessToken?.key ?? DEFAULT_ACCESS_KEY,
+      storageType: accessToken?.storageType ?? DEFAULT_ACCESS_STORAGE,
+      storage: accessToken?.storage,
+      getToken: accessToken?.getToken,
     };
-    this.refreshTokenConfig = refreshToken;
+
+    this.refreshTokenConfig = {
+      key: refreshToken?.key ?? DEFAULT_ACCESS_KEY,
+      storageType: refreshToken?.storageType ?? DEFAULT_ACCESS_STORAGE,
+      storage: refreshToken?.storage,
+      getToken: refreshToken?.getToken,
+    };
+
     this.signInUrl = signInUrl;
     this.urls = urls;
 
     this.axiosInstance = config.axiosInstance ?? axios.create();
-  }
-
-  private getStorage(type: StorageType): Storage {
-    return window[type];
   }
 
   get startUrl(): string | undefined {
@@ -46,11 +52,13 @@ export class RestStrategy implements Strategy {
   }
 
   get token(): string | undefined {
-    return this.getStorage(this.accessToken.storage).getItem(this.accessToken.key) ?? undefined;
+    const accessStorage = this.getAccessStorage();
+    return accessStorage.getItem(this.accessTokenConfig.key) ?? undefined;
   }
 
   set token(token: string) {
-    this.getStorage(this.accessToken.storage).setItem(this.accessToken.key, token);
+    const accessStorage = this.getAccessStorage();
+    accessStorage.setItem(this.accessTokenConfig.key, token);
   }
 
   get isAuthenticated(): boolean {
@@ -160,19 +168,36 @@ export class RestStrategy implements Strategy {
   };
 
   public clear = (): void => {
-    this.getStorage(this.accessToken.storage).removeItem(this.accessToken.key);
+    const accessStorage = this.getAccessStorage();
+    accessStorage.removeItem(this.accessTokenConfig.key);
     if (this.refreshTokenConfig) {
-      this.getStorage(this.refreshTokenConfig.storage).removeItem(this.refreshTokenConfig.key);
+      const refreshStorage = this.getRefreshStorage();
+      refreshStorage.removeItem(this.refreshTokenConfig.key);
     }
     this.helper.reset();
   };
+
+  private getStorage(type: StorageType): Storage {
+    return window[type];
+  }
+
+  private getAccessStorage(): Storage {
+    return this.accessTokenConfig?.storage ?? this.getStorage(this.accessTokenConfig.storageType);
+  }
+
+  private getRefreshStorage(): Storage {
+    return (
+      this.refreshTokenConfig?.storage ??
+      this.getStorage(this.refreshTokenConfig?.storageType ?? DEFAULT_REFRESH_STORAGE)
+    );
+  }
 
   private extractToken = (response: unknown, url?: string): string => {
     if (typeof response === 'string') {
       return response;
     }
 
-    const getter = this.accessToken.getToken;
+    const getter = this.accessTokenConfig.getToken;
     return getter ? getter(response, url) : '';
   };
 
@@ -184,10 +209,10 @@ export class RestStrategy implements Strategy {
   };
 
   private setAuthParams = (token: string, refreshTokenValue?: string): void => {
-    const accessStorage = this.getStorage(this.accessToken.storage);
-    accessStorage.setItem(this.accessToken.key, token);
+    const accessStorage = this.getAccessStorage();
+    accessStorage.setItem(this.accessTokenConfig.key, token);
     if (this.refreshTokenConfig && refreshTokenValue) {
-      const refreshStorage = this.getStorage(this.refreshTokenConfig.storage);
+      const refreshStorage = this.getRefreshStorage();
       refreshStorage.setItem(this.refreshTokenConfig.key, refreshTokenValue);
     }
     this.helper.activeStrategyName = this.name;
