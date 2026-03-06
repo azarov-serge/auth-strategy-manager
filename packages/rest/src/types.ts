@@ -1,4 +1,4 @@
-import { AxiosRequestConfig } from 'axios';
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 export type UrlConfig = {
   url: string;
@@ -29,5 +29,5 @@ export type Config = Record<UrlName, UrlConfig> & {
   refreshToken?: Partial<RefreshTokenConfig>;
   /** URL for redirecting to the authorization page */
   signInUrl?: string;
-  axiosInstance?: any;
+  axiosInstance?: AxiosInstance;
 };

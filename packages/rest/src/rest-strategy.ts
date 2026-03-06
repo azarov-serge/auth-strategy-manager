@@ -1,6 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
-import { AccessTokenConfig, Config, RefreshTokenConfig, StorageType, UrlName } from './types';
+import {
+  AccessTokenConfig,
+  Config,
+  RefreshTokenConfig,
+  StorageType,
+  UrlConfig,
+  UrlName,
+} from './types';
 
 const DEFAULT_NAME = 'rest';
 const DEFAULT_ACCESS_KEY = 'access';
@@ -10,7 +17,7 @@ const DEFAULT_REFRESH_STORAGE: StorageType = 'sessionStorage';
 export class RestStrategy implements Strategy {
   public readonly name: string;
   public readonly axiosInstance: AxiosInstance;
-  public readonly urls: Partial<Record<UrlName, any>>;
+  public readonly urls: Partial<Record<UrlName, UrlConfig>>;
   signInUrl?: string;
 
   private readonly accessTokenConfig: AccessTokenConfig;
