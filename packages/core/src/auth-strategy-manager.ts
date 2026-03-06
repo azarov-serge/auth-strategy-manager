@@ -112,6 +112,8 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
       }
     }
 
+    // Trigger the active strategy's token setter so it persists the token to its storage (e.g. REST → sessionStorage).
+    this.strategy.token = this.strategy.token;
     return isAuthenticated;
   };
 

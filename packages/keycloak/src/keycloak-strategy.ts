@@ -1,8 +1,10 @@
 import Keycloak, { KeycloakInitOptions } from 'keycloak-js';
 import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
-import { Config } from './types';
+import { AccessTokenConfig, Config, StorageType } from './types';
 
 const DEFAULT_NAME = 'keycloak';
+const DEFAULT_ACCESS_KEY = 'access';
+const DEFAULT_ACCESS_STORAGE: StorageType = 'sessionStorage';
 const MIN_VALIDITY_SECONDS = 5;
 
 export class KeycloakStrategy implements Strategy {
@@ -14,9 +16,10 @@ export class KeycloakStrategy implements Strategy {
   signInUrl?: string;
 
   private readonly helper: StrategyHelper;
+  private readonly accessTokenConfig: AccessTokenConfig;
 
   constructor(config: Config) {
-    const { name, keycloak, signInUrl, init } = config;
+    const { name, keycloak, signInUrl, init, accessToken } = config;
 
     this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
@@ -25,6 +28,13 @@ export class KeycloakStrategy implements Strategy {
     this.init = init;
 
     this.keycloak = new Keycloak(keycloak);
+
+    this.accessTokenConfig = {
+      key: accessToken?.key ?? DEFAULT_ACCESS_KEY,
+      storageType: accessToken?.storageType ?? DEFAULT_ACCESS_STORAGE,
+      storage: accessToken?.storage,
+      getToken: accessToken?.getToken,
+    };
   }
 
   get startUrl(): string | undefined {
@@ -39,11 +49,19 @@ export class KeycloakStrategy implements Strategy {
     return this.keycloak.token;
   }
 
+  set token(token: string | undefined) {
+    const accessStorage = this.getAccessStorage();
+
+    if (token && accessStorage) {
+      accessStorage.setItem(this.accessTokenConfig.key, token);
+    }
+  }
+
   get isAuthenticated(): boolean {
     return this.helper.isAuthenticated;
   }
 
-  checkAuth = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<boolean> => {
     if (this.helper.isAuthenticated) {
       return true;
     }
@@ -55,6 +73,7 @@ export class KeycloakStrategy implements Strategy {
       }
     );
 
+    this.token = this.keycloak.token;
     this.helper.isAuthenticated = isAuthenticated;
 
     if (isAuthenticated) {
@@ -65,7 +84,7 @@ export class KeycloakStrategy implements Strategy {
     return isAuthenticated;
   };
 
-  signIn = async <T>(): Promise<T> => {
+  public signIn = async <T>(): Promise<T> => {
     this.helper.activeStrategyName = this.name;
 
     if (this.helper.isAuthenticated) {
@@ -80,23 +99,26 @@ export class KeycloakStrategy implements Strategy {
         onLoad: 'login-required',
         redirectUri: this.startUrl,
       });
-
+      this.token = this.keycloak.token;
       this.helper.isAuthenticated = true;
     }
 
     return undefined as T;
   };
 
-  signUp = async <T>(): Promise<T> => {
+  public signUp = async <T>(): Promise<T> => {
     return undefined as T;
   };
 
-  signOut = async (): Promise<void> => {
+  public signOut = async (): Promise<void> => {
     await this.keycloak.logout({
       redirectUri: this.only ? undefined : this.signInUrl,
     });
 
     this.helper.reset();
+    const accessStorage = this.getAccessStorage();
+
+    accessStorage?.removeItem(this.accessTokenConfig.key);
   };
 
   /**
@@ -104,11 +126,19 @@ export class KeycloakStrategy implements Strategy {
    * If iframe session status is enabled, session status is also checked.
    * If not specified, the value 5 is used.
    */
-  refreshToken = async <T>(sec?: T): Promise<void> => {
+  public refreshToken = async <T>(sec?: T): Promise<void> => {
     const minValiditySeconds = typeof sec === 'number' ? sec : MIN_VALIDITY_SECONDS;
 
     try {
       await this.keycloak.updateToken(minValiditySeconds);
     } catch (error) {}
+  };
+
+  private getStorage = (type: StorageType): Storage => {
+    return window[type];
+  };
+
+  private getAccessStorage = (): Storage => {
+    return this.accessTokenConfig?.storage ?? this.getStorage(this.accessTokenConfig.storageType);
   };
 }
