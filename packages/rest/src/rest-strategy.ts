@@ -184,22 +184,22 @@ export class RestStrategy implements Strategy {
     this.helper.reset();
   };
 
-  private getStorage(type: StorageType): Storage {
+  protected getStorage(type: StorageType): Storage {
     return window[type];
   }
 
-  private getAccessStorage(): Storage {
+  protected getAccessStorage(): Storage {
     return this.accessTokenConfig?.storage ?? this.getStorage(this.accessTokenConfig.storageType);
   }
 
-  private getRefreshStorage(): Storage {
+  protected getRefreshStorage(): Storage {
     return (
       this.refreshTokenConfig?.storage ??
       this.getStorage(this.refreshTokenConfig?.storageType ?? DEFAULT_REFRESH_STORAGE)
     );
   }
 
-  private extractToken = (response: unknown, url?: string): string => {
+  protected extractToken = (response: unknown, url?: string): string => {
     if (typeof response === 'string') {
       return response;
     }
@@ -208,14 +208,14 @@ export class RestStrategy implements Strategy {
     return getter ? getter(response, url) : '';
   };
 
-  private extractRefreshToken = (response: unknown, url?: string): string | undefined => {
+  protected extractRefreshToken = (response: unknown, url?: string): string | undefined => {
     const getter = this.refreshTokenConfig?.getToken;
     if (!getter) return undefined;
     const value = getter(response, url);
     return value || undefined;
   };
 
-  private setAuthParams = (token: string, refreshTokenValue?: string): void => {
+  protected setAuthParams = (token: string, refreshTokenValue?: string): void => {
     const accessStorage = this.getAccessStorage();
     accessStorage.setItem(this.accessTokenConfig.key, token);
     if (this.refreshTokenConfig && refreshTokenValue) {

@@ -134,11 +134,11 @@ export class KeycloakStrategy implements Strategy {
     } catch (error) {}
   };
 
-  private getStorage = (type: StorageType): Storage => {
+  protected getStorage = (type: StorageType): Storage => {
     return window[type];
   };
 
-  private getAccessStorage = (): Storage => {
+  protected getAccessStorage = (): Storage => {
     return this.accessTokenConfig?.storage ?? this.getStorage(this.accessTokenConfig.storageType);
   };
 }
