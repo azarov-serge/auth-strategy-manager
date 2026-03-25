@@ -15,4 +15,9 @@ export type Config = Partial<Record<UrlName, UrlConfig>> & {
   axiosInstance?: AxiosInstance;
   /** Extract access / refresh token from API response */
   getToken?: (response: unknown, options?: { url?: string; type: 'access' | 'refresh' }) => string;
+  /**
+   * Optional auth state extractor (cookie-only / BFF).
+   * Use when your backend session is stored in HTTP-only cookies and API responses intentionally contain no tokens.
+   */
+  getIsAuthenticated?: (response: unknown, options?: { url?: string }) => boolean;
 };

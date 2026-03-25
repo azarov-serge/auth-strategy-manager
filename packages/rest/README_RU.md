@@ -90,6 +90,11 @@ type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
     response: unknown,
     options?: { url?: string; type: 'access' | 'refresh' },
   ) => string;
+  /**
+   * Опционально: извлечение факта аутентификации (cookie-only / BFF).
+   * Используйте, когда сессия живёт в HTTP-only cookie и ответы API намеренно не содержат токены.
+   */
+  getIsAuthenticated?: (response: unknown, options?: { url?: string }) => boolean;
 };
 ```
 
@@ -108,6 +113,7 @@ type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
 | `signInUrl` | Опциональный URL экрана логина. |
 | `axiosInstance` | Свой axios (по умолчанию `axios.create()`). |
 | `getToken` | Опционально; без неё поля токенов в `AuthManagerData` останутся пустыми, если вы не дополняете ответ сами. |
+| `getIsAuthenticated` | Опционально для cookie-only: вернуть `true` для “аутентифицированных” ответов даже без токенов. |
 
 ## API
 

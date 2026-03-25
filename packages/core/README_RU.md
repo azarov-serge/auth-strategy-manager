@@ -79,8 +79,8 @@ constructor(strategies: Strategy[])
 #### Методы
 
 - `checkAuth(): Promise<AuthManagerData>` - Проверяет статус аутентификации по всем стратегиям и возвращает нормализованное состояние.
-- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signIn` активной стратегии.
-- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signUp` активной стратегии.
+- `signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signIn` активной стратегии.
+- `signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signUp` активной стратегии.
 - `signOut(): Promise<void>` - Проксирует вызов `signOut` активной стратегии.
 - `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Проксирует вызов `refreshToken` активной стратегии и возвращает нормализованное состояние.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
@@ -225,8 +225,8 @@ interface Strategy {
   signInUrl?: string;
   
   checkAuth(): Promise<AuthManagerData>;
-  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
-  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
+  signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
   signOut(): Promise<void>;
   refreshToken<T>(args?: T): Promise<AuthManagerData>;
   clear?(): void;

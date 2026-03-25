@@ -1,33 +1,29 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, isAxiosError } from 'axios';
+import type { AuthManagerData } from '@auth-strategy-manager/core';
 import { Config, UrlConfig, UrlName } from './types';
 
 const DEFAULT_NAME = 'rest';
-
-type AuthManagerData = {
-  isAuthenticated: boolean;
-  strategyName: string;
-  accessToken: string;
-  refreshToken?: string;
-};
 
 export class RestStrategy {
   public readonly name: string;
   public readonly axiosInstance: AxiosInstance;
   public readonly urls: Partial<Record<UrlName, UrlConfig>>;
   public readonly getToken?: Config['getToken'];
+  public readonly getIsAuthenticated?: Config['getIsAuthenticated'];
   public signInUrl?: string;
 
   private currentRefresh: Promise<AuthManagerData> | null = null;
   private startUrlValue?: string;
 
   constructor(config: Config) {
-    const { name, signInUrl, axiosInstance, getToken, ...urls } = config;
+    const { name, signInUrl, axiosInstance, getToken, getIsAuthenticated, ...urls } = config;
 
     this.name = name || DEFAULT_NAME;
     this.signInUrl = signInUrl;
     this.urls = urls;
     this.axiosInstance = axiosInstance ?? axios.create();
     this.getToken = getToken;
+    this.getIsAuthenticated = getIsAuthenticated;
   }
 
   get startUrl(): string | undefined {
@@ -44,7 +40,7 @@ export class RestStrategy {
     }
 
     const { url, method } = this.urls.checkAuth;
-    const response = await this.axiosInstance(url, { method });
+    const response = await this.callAxios(url, { method });
 
     return this.toAuthManagerData(response, url);
   };
@@ -89,7 +85,7 @@ export class RestStrategy {
       return;
     }
 
-    await this.axiosInstance(url, { method });
+    await this.callAxios(url, { method });
   };
 
   public refreshToken = async (): Promise<AuthManagerData> => {
@@ -112,7 +108,7 @@ export class RestStrategy {
     }
 
     this.currentRefresh = (async () => {
-      const response = await this.axiosInstance(url, { method });
+      const response = await this.callAxios(url, { method });
       return this.toAuthManagerData(response, url);
     })();
 
@@ -131,13 +127,15 @@ export class RestStrategy {
       axiosConfig = config as AxiosRequestConfig;
     }
 
-    return await this.axiosInstance(url, { ...axiosConfig, method });
+    return await this.callAxios(url, { ...axiosConfig, method });
   };
 
   private toAuthManagerData = (response: unknown, url?: string): AuthManagerData => {
     const accessToken = this.extractToken(response, { url, type: 'access' });
     const refreshToken = this.extractToken(response, { url, type: 'refresh' }) || undefined;
-    const isAuthenticated = Boolean(accessToken || refreshToken);
+    const isAuthenticated = this.getIsAuthenticated
+      ? this.getIsAuthenticated(response, { url })
+      : Boolean(accessToken || refreshToken);
 
     return {
       isAuthenticated,
@@ -156,5 +154,38 @@ export class RestStrategy {
     }
 
     return this.getToken(response, options) || '';
+  };
+
+  private callAxios = async (
+    url: string,
+    config?: AxiosRequestConfig
+  ): Promise<unknown> => {
+    try {
+      return await this.axiosInstance(url, config);
+    } catch (error) {
+      throw this.normalizeAxiosError(error);
+    }
+  };
+
+  private normalizeAxiosError = (error: unknown): unknown => {
+    if (!isAxiosError(error)) {
+      return error;
+    }
+
+    const err = error as AxiosError & { code?: unknown };
+
+    if (typeof err.code === 'string' && err.code) {
+      return err;
+    }
+
+    const message = String(err.message ?? '');
+    const lower = message.toLowerCase();
+    const code =
+      lower.includes('timeout') || lower.includes('timed out')
+        ? 'ETIMEDOUT'
+        : 'ERR_NETWORK';
+
+    err.code = code;
+    return err;
   };
 }

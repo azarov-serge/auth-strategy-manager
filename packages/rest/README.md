@@ -90,6 +90,11 @@ type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
     response: unknown,
     options?: { url?: string; type: 'access' | 'refresh' },
   ) => string;
+  /**
+   * Optional auth state extractor (cookie-only / BFF).
+   * Use when your backend session is stored in HTTP-only cookies and API responses intentionally contain no tokens.
+   */
+  getIsAuthenticated?: (response: unknown, options?: { url?: string }) => boolean;
 };
 ```
 
@@ -108,6 +113,7 @@ All **URL entries are optional** in the type — pass only what you call. Runtim
 | `signInUrl` | Optional app URL for the login screen. |
 | `axiosInstance` | Optional axios instance (default: `axios.create()`). |
 | `getToken` | Optional extractor; if missing, tokens in `AuthManagerData` stay empty unless you merge them yourself. |
+| `getIsAuthenticated` | Optional cookie-only extractor: return `true` for authenticated responses even when tokens are empty. |
 
 ## API
 
