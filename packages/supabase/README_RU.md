@@ -99,7 +99,7 @@ constructor(config: SupabaseConfig)
 #### Свойства
 
 - `name`, `supabase`, `signInUrl`
-- `token` (только чтение) / `isAuthenticated` — отражают последнюю известную сессию после операций Supabase
+- `token` (только чтение) / `isAuthenticated` — отражают последнюю известную сессию после операций Supabase (могут устареть, если сессия Supabase меняется вне стратегии; вызовите `authManager.checkAuth()` / `supabaseStrategy.checkAuth()` для синхронизации)
 - `startUrl` — get/set база редиректа в памяти (для согласования с менеджером)
 
 ## Лицензия

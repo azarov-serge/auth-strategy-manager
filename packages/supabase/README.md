@@ -99,7 +99,7 @@ constructor(config: SupabaseConfig)
 #### Properties
 
 - `name`, `supabase`, `signInUrl`
-- `token` (read-only) / `isAuthenticated` — mirror of the last known session from Supabase operations
+- `token` (read-only) / `isAuthenticated` — mirror of the last known session from Supabase operations (can be stale if the Supabase session changes outside of this strategy; call `authManager.checkAuth()` / `supabaseStrategy.checkAuth()` to re-sync)
 - `startUrl` — get/set in-memory redirect base (for manager alignment)
 
 ## License

@@ -1,9 +1,9 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
-import type { AuthManagerData, AuthResponse, Config, SessionInfo } from './types';
+import type { AuthManagerData } from '@auth-strategy-manager/core';
+import type { AuthResponse, Config, SessionInfo } from './types';
 
 const DEFAULT_NAME = 'supabase';
 
-/** Compatible with `Strategy` from `@auth-strategy-manager/core` v2. Use `AuthStrategyManager` for storage sync. */
 export class SupabaseStrategy {
   public readonly name: string;
   public readonly supabase: SupabaseClient;
