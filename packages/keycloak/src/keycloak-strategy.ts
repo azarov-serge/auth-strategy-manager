@@ -1,10 +1,11 @@
 import Keycloak, { KeycloakInitOptions } from 'keycloak-js';
-import { AuthManagerData, Config } from './types';
+import type { AuthManagerData } from '@auth-strategy-manager/core';
+import { Config } from './types';
 
 const DEFAULT_NAME = 'keycloak';
 const MIN_VALIDITY_SECONDS = 5;
 
-/** Compatible with `Strategy` from `@auth-strategy-manager/core` v2. Token persistence is handled by AuthStrategyManager / AuthStorageManager. */
+/** Compatible with `Strategy` from `@auth-strategy-manager/core` v2 (returns core `AuthManagerData`). */
 export class KeycloakStrategy {
   readonly name: string;
   readonly keycloak: Keycloak;
