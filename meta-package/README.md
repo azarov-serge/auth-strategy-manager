@@ -56,7 +56,8 @@ npm install @auth-strategy-manager/core @auth-strategy-manager/keycloak @auth-st
 ### Basic Usage with Core Only
 
 ```typescript
-import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
+import type { AuthManagerData, Strategy } from '@auth-strategy-manager/core';
+import { AuthStrategyManager } from '@auth-strategy-manager/core';
 
 // Create custom strategy
 class CustomStrategy implements Strategy {
@@ -64,26 +65,36 @@ class CustomStrategy implements Strategy {
   
   public checkAuth = async (): Promise<AuthManagerData> => {
     // Your authentication logic
-    return { isAuthenticated: true, strategyName: this.name, accessToken: "", refreshToken: undefined };
+    return {
+      isAuthenticated: true,
+      strategyName: this.name,
+      accessToken: '',
+      refreshToken: undefined,
+    };
   };
   
-  public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signIn = async <T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T> => {
     // Your sign in logic
     return {} as T;
   };
   
-  public signUp = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
+  public signUp = async <T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T> => {
     // Your sign up logic
     return {} as T;
   };
   
   public signOut = async (): Promise<void> => {
     // Your sign out logic
-    this.clearStorage();
   };
   
   public refreshToken = async <T>(args?: T): Promise<AuthManagerData> => {
     // Your token refresh logic
+    return {
+      isAuthenticated: false,
+      strategyName: this.name,
+      accessToken: '',
+      refreshToken: undefined,
+    };
   };
 
   public clear = (): void => {
@@ -116,8 +127,8 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 #### Methods
 
 - `checkAuth(): Promise<AuthManagerData>` - Check authentication status across all strategies and return normalized auth state. Strategies whose runtime constructor name is `RestStrategy` skip `checkAuth` when both `accessToken` and `refreshToken` in `AuthStorageManager` use only `localStorage`/`sessionStorage` and are empty (no redundant HTTP probe). Other strategies are always probed. Slots using `HTTP_ONLY_COOKIE` or `RAM` are never treated as “empty proof” so cookie-only REST still runs `checkAuth`. Aggressive class-name minification can break the `RestStrategy` name check.
-- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
-- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
+- `signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
+- `signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
 - `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.
 - `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Proxy to the active strategy `refreshToken` and return normalized auth state.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
