@@ -126,7 +126,7 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 
 #### Methods
 
-- `checkAuth(): Promise<AuthManagerData>` - Check authentication status across all strategies and return normalized auth state.
+- `checkAuth(): Promise<AuthManagerData>` - Check authentication status across all strategies and return normalized auth state. Strategies whose runtime constructor name is `RestStrategy` skip `checkAuth` when both `accessToken` and `refreshToken` in `AuthStorageManager` use only `localStorage`/`sessionStorage` and are empty (no redundant HTTP probe). Other strategies are always probed. Slots using `HTTP_ONLY_COOKIE` or `RAM` are never treated as “empty proof” so cookie-only REST still runs `checkAuth`. Aggressive class-name minification can break the `RestStrategy` name check.
 - `signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
 - `signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
 - `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.

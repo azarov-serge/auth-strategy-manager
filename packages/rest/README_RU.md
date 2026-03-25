@@ -127,7 +127,7 @@ constructor(config: RestConfig)
 
 #### Методы
 
-- `checkAuth(): Promise<AuthManagerData>` — нужен URL `checkAuth`.
+- `checkAuth(): Promise<AuthManagerData>` — нужен URL `checkAuth`. С `AuthStrategyManager` вызов может быть пропущен, если имя класса остаётся `RestStrategy` и слоты access/refresh только в `localStorage`/`sessionStorage` и оба пусты — см. `checkAuth` в core.
 - `signIn<T, D>(config?: D): Promise<T>` — нужен `signIn`; в результат мержится `AuthManagerData`.
 - `signUp<T, D>(config?: D): Promise<T>` — если URL `signUp` не задан в конфиге, возвращает неаутентифицированный placeholder `AuthManagerData` (no-op); иначе мержит ответ с `AuthManagerData`.
 - `signOut(): Promise<void>` — вызывает URL `signOut`, если задан; иначе no-op.

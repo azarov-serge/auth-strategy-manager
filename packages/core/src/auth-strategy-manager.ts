@@ -1,6 +1,6 @@
 import { CertError, NetworkError, Timeout3rdPartyError } from './errors';
 import { CERT_ERROR_CODE, NETWORK_ERROR_CODE, TIMEOUT_3RD_PARTY_ERROR_CODE } from './constants';
-import { AuthStorage, AuthStorageManager } from './helpers';
+import { AuthStorage, AuthStorageManager, type StorageType } from './helpers';
 
 import {
   AuthStrategyManagerStrategies,
@@ -95,7 +95,13 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
     };
 
     if (strategyNames.length === 1) {
-      const data = await this.strategies[strategyName].checkAuth();
+      const only = this.strategies[strategyName];
+      if (!this.shouldInvokeCheckAuth(only)) {
+        this.syncStorage(authManagerData);
+        return authManagerData;
+      }
+
+      const data = await only.checkAuth();
       this.applyAuthData(authManagerData, data);
 
       this.syncStorage(authManagerData);
@@ -103,8 +109,17 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
       return authManagerData;
     }
 
+    const namesToProbe = strategyNames.filter((name) =>
+      this.shouldInvokeCheckAuth(this.strategies[name])
+    );
+
+    if (namesToProbe.length === 0) {
+      this.syncStorage(authManagerData);
+      return authManagerData;
+    }
+
     const actives = await Promise.allSettled(
-      strategyNames.map((strategyName) => this.strategies[strategyName].checkAuth())
+      namesToProbe.map((name) => this.strategies[name].checkAuth())
     );
 
     for (let index = 0; index < actives.length; index++) {
@@ -219,6 +234,52 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
   };
 
   /** Same resolution as `strategy` getter: with a single strategy, no persisted name is required (e.g. after losing sessionStorage). */
+  private shouldInvokeCheckAuth(strategy: Strategy): boolean {
+    if (strategy.constructor?.name !== 'RestStrategy') {
+      return true;
+    }
+    return !this.hasNoClientPersistedCredentials();
+  }
+
+  /**
+   * True when access (and refresh, if also client-persisted) are empty in localStorage/sessionStorage.
+   * False if either uses HTTP_ONLY_COOKIE or RAM — a session may still exist (e.g. cookie-only REST).
+   */
+  private hasNoClientPersistedCredentials(): boolean {
+    const { accessToken, refreshToken } = this.storageManager;
+
+    if (!this.isClientPersistedStorage(accessToken.type)) {
+      return false;
+    }
+
+    if (this.getTrimmedStorageValue(accessToken)) {
+      return false;
+    }
+
+    if (!refreshToken) {
+      return true;
+    }
+
+    if (!this.isClientPersistedStorage(refreshToken.type)) {
+      return false;
+    }
+
+    return !this.getTrimmedStorageValue(refreshToken);
+  }
+
+  private isClientPersistedStorage(type: StorageType): boolean {
+    return type === 'localStorage' || type === 'sessionStorage';
+  }
+
+  private getTrimmedStorageValue(storage: AuthStorage): string | null {
+    const raw = storage.getValue();
+    if (raw == null) {
+      return null;
+    }
+    const trimmed = raw.trim();
+    return trimmed === '' ? null : trimmed;
+  }
+
   private resolveActiveStrategy(): Strategy | undefined {
     const names = Object.keys(this.strategies);
 
