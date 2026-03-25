@@ -62,9 +62,9 @@ import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  public checkAuth = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<AuthManagerData> => {
     // Ваша логика аутентификации
-    return true;
+    return { isAuthenticated: true, strategyName: this.name, accessToken: "", refreshToken: undefined };
   };
   
   public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
@@ -82,7 +82,7 @@ class CustomStrategy implements Strategy {
     this.clearStorage();
   };
   
-  public refreshToken = async <T>(args?: T): Promise<void> => {
+  public refreshToken = async <T>(args?: T): Promise<AuthManagerData> => {
     // Ваша логика обновления токена
   };
 
@@ -119,12 +119,78 @@ constructor(strategies: Strategy[])
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signIn` активной стратегии.
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signUp` активной стратегии.
 - `signOut(): Promise<void>` - Проксирует вызов `signOut` активной стратегии.
-- `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Проксирует вызов `refreshToken` активной стратегии (если активная стратегия есть).
+- `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Проксирует вызов `refreshToken` активной стратегии и возвращает нормализованное состояние.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
 - `use(strategyName: string): void` - Устанавливает активную стратегию по имени (нужен только при нескольких стратегиях)
 - `clear(): void` - Очищает состояние аутентификации и сбрасывает все стратегии
 
 `AuthStrategyManager` реализует интерфейс `Strategy` и может использоваться как фасад над активной стратегией.
+
+### Политика хранения токенов в AuthManager (Best Practice)
+
+`AuthStrategyManager` — единая точка управления состоянием аутентификации, выбором активной стратегии и политикой хранения токенов.
+
+Политика по умолчанию ("security-first", рекомендуемая на сегодня):
+
+- `accessToken`: `HTTP_ONLY_COOKIE`
+- `refreshToken`: `HTTP_ONLY_COOKIE`
+
+При необходимости это можно переопределить (`sessionStorage` / `localStorage`), но для критичных сценариев лучше задавать конфигурацию явно.
+
+#### Рекомендуемые паттерны
+
+1) `access: HTTPOnly cookie` + `refresh: HTTPOnly cookie` (по умолчанию)
+
+- Самый частый вариант в security-first командах и BFF/server-session архитектурах.
+- Плюсы: минимальная XSS-поверхность для токенов.
+- Минусы: требуется аккуратная настройка CORS/CSRF и дисциплина на backend.
+
+2) `access: sessionStorage` + `refresh: HTTPOnly cookie` (частый компромисс в SPA)
+
+- Access токен доступен в JS для Bearer-сценариев.
+- Refresh токен скрыт от JS.
+- Хороший баланс UX и безопасности для многих SPA.
+
+#### Пример 1: access + refresh в HTTPOnly cookie (по умолчанию)
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'HTTP_ONLY_COOKIE'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Пример 2: access в sessionStorage + refresh в HTTPOnly cookie
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'sessionStorage'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Какие паттерны обычно не рекомендуются
+
+3) `access: sessionStorage` + `refresh: sessionStorage`
+
+- Иногда допустимо для внутренних low-risk приложений.
+- Минус: оба токена доступны JS (выше XSS-риск).
+
+4) `access: sessionStorage` + `refresh: localStorage`
+
+- Редкий и спорный вариант.
+- Выбирают ради переживания перезапуска браузера, но безопасность хуже из-за долгоживущего refresh в `localStorage`.
+
+5) `access: localStorage` + `refresh: localStorage`
+
+- Исторически популярный, но сейчас обычно считается anti-pattern для публичных приложений.
+- Максимальная XSS-поверхность среди перечисленных схем.
 
 #### Примеры использования
 
@@ -132,6 +198,7 @@ constructor(strategies: Strategy[])
 // Создание менеджера со стратегиями
 const authManager = new AuthStrategyManager([strategy1, strategy2]);
 
+// Нормализованное состояние (синхронизация с AuthStorageManager)
 const authState = await authManager.checkAuth();
 
 // Переключение на конкретную стратегию
@@ -146,7 +213,7 @@ authManager.clear();
 
 ### Использование Keycloak стратегии (v2)
 
-Нужны **core ^2.0.0** и **@auth-strategy-manager/keycloak ^2.0.0**. Чеклист: [README Keycloak](../packages/keycloak/README_RU.md).
+Нужны **core ^2.0.0** и **@auth-strategy-manager/keycloak ^2.0.0**. Полный чеклист — [README пакета Keycloak](packages/keycloak/README_RU.md).
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -173,7 +240,7 @@ await authManager.signOut();
 
 ### Использование REST стратегии (v2)
 
-Хранилище токенов — у **`AuthStrategyManager`** / **`AuthStorageManager`**.
+Хранилище токенов настраивается у **`AuthStrategyManager`** через **`AuthStorageManager`**, не в `RestStrategy`.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -199,7 +266,7 @@ await authManager.signOut();
 
 ### Использование Supabase стратегии (v2)
 
-Нужны **core ^2.0.0** и **@auth-strategy-manager/supabase ^2.0.0**. В конфиге поле **`supabase`** (клиент). Чеклист: [README Supabase](../packages/supabase/README_RU.md).
+Нужны **core ^2.0.0** и **@auth-strategy-manager/supabase ^2.0.0**. В конфиге поле **`supabase`** (клиент), не `supabaseClient`. Подробности — [README пакета Supabase](packages/supabase/README_RU.md).
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -216,7 +283,7 @@ const supabaseStrategy = new SupabaseStrategy({
 
 const authManager = new AuthStrategyManager([supabaseStrategy]);
 
-await authManager.checkAuth();
+const state = await authManager.checkAuth();
 await authManager.signIn({ email: 'user@example.com', password: 'password123' });
 await authManager.refreshToken();
 await authManager.signOut();
@@ -266,7 +333,8 @@ await authManager.checkAuth();
 
 ### Пакет Keycloak (@auth-strategy-manager/keycloak)
 
-- **v2** — `AuthManagerData` + **core ^2.0.0**; [README_RU](../packages/keycloak/README_RU.md)
+- **v2** — `KeycloakStrategy` возвращает `AuthManagerData`; вместе с **core ^2.0.0**
+- [README_RU](packages/keycloak/README_RU.md) — чеклист перед тестом
 
 ### Пакет REST (@auth-strategy-manager/rest)
 
@@ -277,8 +345,8 @@ await authManager.checkAuth();
 
 ### Пакет Supabase (@auth-strategy-manager/supabase)
 
-- **v2** — `AuthManagerData` из `checkAuth` / `signIn` / `signUp` / `refreshToken`; peer **core ^2.0.0**
-- [README_RU](../packages/supabase/README_RU.md)
+- **v2** — `checkAuth` / `signIn` / `signUp` / `refreshToken` возвращают или дополняют ответ **`AuthManagerData`**; вместе с **core ^2.0.0** (peer dependency)
+- [README_RU](packages/supabase/README_RU.md) — чеклист интеграции и breaking changes относительно v1
 
 ## 📖 Документация
 

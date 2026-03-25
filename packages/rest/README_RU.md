@@ -1,11 +1,11 @@
 # @auth-strategy-manager/rest
 
-Стратегия REST API для auth-strategy-manager.
+Стратегия REST API для [auth-strategy-manager](https://github.com/azarov-serge/auth-strategy-manager). **v2** рассчитана на `@auth-strategy-manager/core` **^2.0.0**.
 
-## 🌍 Документация на других языках
+## Документация на других языках
 
-- [🇺🇸 English (Английский)](README.md)
-- [🇷🇺 Русский (Текущий)](README_RU.md)
+- [English (Английский)](README.md)
+- Русский (этот файл)
 
 ## Установка
 
@@ -13,143 +13,146 @@
 npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
 ```
 
+Используйте **core 2.x** вместе с **rest 2.x**.
+
 ## Использование
+
+`RestStrategy` выполняет HTTP-запросы и собирает `AuthManagerData` из ответов через `getToken`. **Сохранение** токенов и имени стратегии делает `AuthStrategyManager` + `AuthStorageManager` из `@auth-strategy-manager/core` — не этот класс.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 
-// Создание кастомного axios инстанса
 const axiosInstance = axios.create({
   baseURL: 'https://api.example.com',
-  timeout: 5000
+  timeout: 5000,
 });
 
-// Создание REST стратегии
 const restStrategy = new RestStrategy({
   name: 'my-rest',
-  signInUrl: 'https://myapp.com/sign-in',
+  signInUrl: '/login',
   axiosInstance,
-  accessToken: {
-    key: 'access_token',
-    storage: 'sessionStorage',
-    getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token,
+  getToken: (response, options) => {
+    const data = (response as { data?: { access?: string; refresh?: string } }).data;
+    if (options?.type === 'refresh') return data?.refresh ?? '';
+    return data?.access ?? '';
   },
-  checkAuth: { url: '/auth/check-auth', method: 'GET' },
-  signIn: { url: '/auth/sign-in', method: 'POST' },
-  signUp: { url: '/auth/sign-up', method: 'POST' },
-  signOut: { url: '/auth/sign-out', method: 'POST' },
+  checkAuth: { url: '/auth/me', method: 'GET' },
+  signIn: { url: '/auth/login', method: 'POST' },
+  signUp: { url: '/auth/register', method: 'POST' },
   refresh: { url: '/auth/refresh', method: 'POST' },
+  // без signOut → RestStrategy.signOut() не ходит в сеть; хранилище чистит AuthStrategyManager
 });
 
-// Использование с менеджером стратегий
 const authManager = new AuthStrategyManager([restStrategy]);
 
-// Вход с кастомными данными
-const loginResult = await restStrategy.signIn<unknown, AxiosRequestConfig>({
-  data: {
-    username: 'user@example.com',
-    password: 'password123'
-  }
+await restStrategy.signIn<unknown, AxiosRequestConfig>({
+  data: { email: 'user@example.com', password: 'secret' },
 });
 
-// Проверка аутентификации
-const isAuthenticated = await restStrategy.checkAuth();
+const state = await authManager.checkAuth();
+await authManager.signOut();
+```
 
-// Выход из системы
-await restStrategy.signOut();
+С серверным **выходом**:
 
-// Очистка состояния
-restStrategy.clear();
+```typescript
+const restStrategy = new RestStrategy({
+  // ...как выше
+  signOut: { url: '/auth/logout', method: 'POST' },
+});
 ```
 
 ## Конфигурация
 
-### RestConfig
+### `RestConfig` (`Config`)
+
+В пакете тип экспортируется как `RestConfig`.
 
 ```typescript
-type RestConfig = {
-  checkAuth: UrlConfig;
-  signIn: UrlConfig;
-  signUp: UrlConfig;
-  signOut: UrlConfig;
-  refresh: UrlConfig;
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+
+type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
+
+type UrlConfig = {
+  url: string;
+  method?: AxiosRequestConfig['method'];
+};
+
+type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
   name?: string;
-  accessToken?: AccessTokenConfig;
-  refreshToken?: RefreshTokenConfig;
+  /** URL страницы входа (для приложения) */
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
+  /** Достать access / refresh из ответа API */
+  getToken?: (
+    response: unknown,
+    options?: { url?: string; type: 'access' | 'refresh' },
+  ) => string;
 };
-
-type AccessTokenConfig = {
-  /** Ключ в хранилище для access токена */
-  key: string;
-  /** Тип встроенного хранилища, используемый реализацией по умолчанию */
-  storageType: 'sessionStorage' | 'localStorage';
-  /** Необязательная своя реализация Storage (например, in-memory, namespaced) */
-  storage?: Storage;
-  /** Функция извлечения access токена из ответа API */
-  getToken?: (response: unknown, url?: string) => string;
-};
-
-type RefreshTokenConfig = {
-  /** Ключ в хранилище для refresh токена */
-  key: string;
-  /** Тип встроенного хранилища, используемый реализацией по умолчанию */
-  storageType: 'sessionStorage' | 'localStorage';
-  /** Необязательная своя реализация Storage (например, in-memory, namespaced) */
-  storage?: Storage;
-  /** Функция извлечения refresh токена из ответа API */
-  getToken?: (response: unknown, url?: string) => string;
-};
-
-type UrlConfig = { url: string; method?: string };
 ```
+
+Все **URL-поля опциональны** в типе — передавайте только то, что вызываете. Сами методы в рантайме **бросают ошибку**, если для операции нет нужного URL (например `signIn` без `signIn` в конфиге).
 
 ### Параметры
 
-- `checkAuth` - Endpoint для проверки аутентификации
-- `signIn` - Endpoint для входа пользователя
-- `signUp` - Endpoint для регистрации пользователя
-- `signOut` - Endpoint для выхода пользователя
-- `refresh` - Endpoint для обновления токена
-- `name` - Имя стратегии (по умолчанию: 'rest')
-- `accessToken` - Конфигурация access токена: `key`, `storageType` (`'sessionStorage' | 'localStorage'`), опциональные `storage` (любое кастомное хранилище, реализующее интерфейс `Storage`, например in-memory или обёртка над localStorage/sessionStorage) и `getToken`. Если не задан, по умолчанию используется `{ key: 'access', storageType: 'sessionStorage' }`.
-- `refreshToken` - Опциональная конфигурация refresh токена: `key`, `storageType`, опциональные `storage` (любое кастомное `Storage`‑хранилище) и `getToken` (например, access в sessionStorage, refresh в localStorage)
-- `signInUrl` - URL для перенаправления после выхода
-- `axiosInstance` - Кастомный axios инстанс
+| Поле | Описание |
+|------|----------|
+| `checkAuth` | Запрос для `checkAuth()`. |
+| `signIn` | Запрос для `signIn()`. |
+| `signUp` | Запрос для `signUp()`. |
+| `signOut` | **Опционально.** Если не задать (или пустой `url`), `signOut()` не идёт в сеть; очистка — через `AuthStrategyManager.signOut()`. |
+| `refresh` | Запрос для `refreshToken()`. |
+| `name` | Идентификатор стратегии (по умолчанию `'rest'`). |
+| `signInUrl` | Опциональный URL экрана логина. |
+| `axiosInstance` | Свой axios (по умолчанию `axios.create()`). |
+| `getToken` | Опционально; без неё поля токенов в `AuthManagerData` останутся пустыми, если вы не дополняете ответ сами. |
 
 ## API
 
-### RestStrategy
+### `RestStrategy`
 
 #### Конструктор
 
-```typescript
+```ts
 constructor(config: RestConfig)
 ```
 
 #### Методы
 
-- `checkAuth(): Promise<boolean>` - Проверка аутентификации
-- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Вход пользователя
-- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Регистрация пользователя
-- `signOut(): Promise<void>` - Выход пользователя
-- `refreshToken(): Promise<void>` - Обновление токена
-- `clear(): void` - Очистка состояния аутентификации
+- `checkAuth(): Promise<AuthManagerData>` — нужен URL `checkAuth`.
+- `signIn<T, D>(config?: D): Promise<T>` — нужен `signIn`; в результат мержится `AuthManagerData`.
+- `signUp<T, D>(config?: D): Promise<T>` — если URL `signUp` не задан в конфиге, возвращает неаутентифицированный placeholder `AuthManagerData` (no-op); иначе мержит ответ с `AuthManagerData`.
+- `signOut(): Promise<void>` — вызывает URL `signOut`, если задан; иначе no-op.
+- `refreshToken(): Promise<AuthManagerData>` — нужен `refresh` в конфиге; параллельные refresh схлопываются в один запрос.
 
 #### Свойства
 
-- `name: string` - Имя стратегии
-- `axiosInstance: AxiosInstance` - Axios инстанс
-- `token?: string` - Текущий токен
-- `isAuthenticated: boolean` - Статус аутентификации
+- `name: string`
+- `axiosInstance: AxiosInstance`
+- `urls: Partial<Record<UrlName, UrlConfig>>`
+- `getToken?` — как в конфиге
+- `signInUrl?: string`
+- `startUrl` — get/set строка (только в памяти на инстансе)
+
+### Вид `AuthManagerData`
+
+Совпадает с `@auth-strategy-manager/core` (возвращается из `checkAuth` / `refreshToken` и мержится в `signIn` / `signUp`):
+
+```ts
+type AuthManagerData = {
+  isAuthenticated: boolean;
+  strategyName: string;
+  accessToken: string;
+  refreshToken?: string;
+};
+```
 
 ## Хранение токенов
 
-Access токен (и при необходимости refresh токен) хранятся согласно `accessToken` и `refreshToken`. Для каждого можно задать `sessionStorage` или `localStorage` отдельно.
+`RestStrategy` **не** пишет и **не** читает `localStorage` / `sessionStorage`. Настройте `AuthStorageManager` у `AuthStrategyManager` в **core** под вашу политику.
 
 ## Лицензия
 
-ISC 
+ISC

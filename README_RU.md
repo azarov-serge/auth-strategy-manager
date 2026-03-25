@@ -14,10 +14,10 @@
 
 Этот репозиторий содержит следующие пакеты:
 
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)**  — основной менеджер стратегий аутентификации: содержит главные классы и интерфейсы для управления стратегиями аутентификации, включая `AuthStrategyManager`, `Strategy`, `StrategyHelper`, классы ошибок и константы.
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** — `AuthStrategyManager`, `Strategy`, `AuthStorageManager`, `StrategyNameStorage`, классы ошибок и константы.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)**  — стратегия Keycloak
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)**  — стратегия REST API
-- **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** — стратегия Supabase
+- **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** — стратегия Supabase (**v2**, peer **core ^2.0.0**)
 
 ## 🚀 Быстрый старт
 
@@ -62,9 +62,9 @@ import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  public checkAuth = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<AuthManagerData> => {
     // Ваша логика аутентификации
-    return true;
+    return { isAuthenticated: true, strategyName: this.name, accessToken: "", refreshToken: undefined };
   };
   
   public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
@@ -82,7 +82,7 @@ class CustomStrategy implements Strategy {
     this.clearStorage();
   };
   
-  public refreshToken = async <T>(args?: T): Promise<void> => {
+  public refreshToken = async <T>(args?: T): Promise<AuthManagerData> => {
     // Ваша логика обновления токена
   };
 
@@ -115,16 +115,82 @@ constructor(strategies: Strategy[])
 
 #### Методы
 
-- `checkAuth(): Promise<boolean>` - Проверяет статус аутентификации по всем стратегиям. Возвращает true, если любая стратегия аутентифицирована.
+- `checkAuth(): Promise<AuthManagerData>` - Проверяет статус аутентификации по всем стратегиям и возвращает нормализованное состояние.
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signIn` активной стратегии.
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signUp` активной стратегии.
 - `signOut(): Promise<void>` - Проксирует вызов `signOut` активной стратегии.
-- `refreshToken<T>(args?: T): Promise<void>` - Проксирует вызов `refreshToken` активной стратегии (если активная стратегия есть).
+- `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Проксирует вызов `refreshToken` активной стратегии и возвращает нормализованное состояние.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Заменяет все стратегии новыми
 - `use(strategyName: string): void` - Устанавливает активную стратегию по имени (нужен только при нескольких стратегиях)
 - `clear(): void` - Очищает состояние аутентификации и сбрасывает все стратегии
 
 `AuthStrategyManager` реализует интерфейс `Strategy` и может использоваться как фасад над активной стратегией.
+
+### Политика хранения токенов в AuthManager (Best Practice)
+
+`AuthStrategyManager` — единая точка управления состоянием аутентификации, выбором активной стратегии и политикой хранения токенов.
+
+Политика по умолчанию ("security-first", рекомендуемая на сегодня):
+
+- `accessToken`: `HTTP_ONLY_COOKIE`
+- `refreshToken`: `HTTP_ONLY_COOKIE`
+
+При необходимости это можно переопределить (`sessionStorage` / `localStorage`), но для критичных сценариев лучше задавать конфигурацию явно.
+
+#### Рекомендуемые паттерны
+
+1) `access: HTTPOnly cookie` + `refresh: HTTPOnly cookie` (по умолчанию)
+
+- Самый частый вариант в security-first командах и BFF/server-session архитектурах.
+- Плюсы: минимальная XSS-поверхность для токенов.
+- Минусы: требуется аккуратная настройка CORS/CSRF и дисциплина на backend.
+
+2) `access: sessionStorage` + `refresh: HTTPOnly cookie` (частый компромисс в SPA)
+
+- Access токен доступен в JS для Bearer-сценариев.
+- Refresh токен скрыт от JS.
+- Хороший баланс UX и безопасности для многих SPA.
+
+#### Пример 1: access + refresh в HTTPOnly cookie (по умолчанию)
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'HTTP_ONLY_COOKIE'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Пример 2: access в sessionStorage + refresh в HTTPOnly cookie
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'sessionStorage'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Какие паттерны обычно не рекомендуются
+
+3) `access: sessionStorage` + `refresh: sessionStorage`
+
+- Иногда допустимо для внутренних low-risk приложений.
+- Минус: оба токена доступны JS (выше XSS-риск).
+
+4) `access: sessionStorage` + `refresh: localStorage`
+
+- Редкий и спорный вариант.
+- Выбирают ради переживания перезапуска браузера, но безопасность хуже из-за долгоживущего refresh в `localStorage`.
+
+5) `access: localStorage` + `refresh: localStorage`
+
+- Исторически популярный, но сейчас обычно считается anti-pattern для публичных приложений.
+- Максимальная XSS-поверхность среди перечисленных схем.
 
 #### Примеры использования
 
@@ -132,8 +198,8 @@ constructor(strategies: Strategy[])
 // Создание менеджера со стратегиями
 const authManager = new AuthStrategyManager([strategy1, strategy2]);
 
-// Проверка аутентификации пользователя
-const isAuthenticated = await authManager.checkAuth();
+// Нормализованное состояние (синхронизация с AuthStorageManager)
+const authState = await authManager.checkAuth();
 
 // Переключение на конкретную стратегию
 authManager.use('keycloak');
@@ -145,25 +211,9 @@ const currentStrategy = authManager.strategy;
 authManager.clear();
 ```
 
-### Strategy Interface
+### Использование Keycloak стратегии (v2)
 
-```typescript
-interface Strategy {
-  name: string;
-  token?: string;
-  isAuthenticated?: boolean;
-  startUrl?: string;
-  signInUrl?: string;
-  
-  checkAuth(): Promise<boolean>;
-  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
-  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
-  signOut(): Promise<void>;
-  refreshToken<T>(args?: T): Promise<void>;
-}
-```
-
-### Использование Keycloak стратегии
+Нужны **core ^2.0.0** и **@auth-strategy-manager/keycloak ^2.0.0**. Полный чеклист — [README пакета Keycloak](packages/keycloak/README_RU.md).
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -173,41 +223,50 @@ const keycloakStrategy = new KeycloakStrategy({
   keycloak: {
     realm: 'my-realm',
     url: 'https://keycloak.example.com',
-    clientId: 'my-client'
-  }
+    clientId: 'my-client',
+  },
+  signInUrl: 'https://myapp.com/login',
+  name: 'keycloak',
+  init: { flow: 'standard', onLoad: 'check-sso' },
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy]);
+keycloakStrategy.startUrl = authManager.startUrl ?? window.location.origin;
+
+await authManager.checkAuth();
+await authManager.signIn();
+await authManager.signOut();
 ```
 
-### Использование REST стратегии
+### Использование REST стратегии (v2)
+
+Хранилище токенов настраивается у **`AuthStrategyManager`** через **`AuthStorageManager`**, не в `RestStrategy`.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
-  accessToken: { key: 'access', storage: 'sessionStorage' },
-  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
+  name: 'rest',
+  getToken: (response, options) => {
+    const data = (response as { data?: { access?: string } }).data;
+    return options?.type === 'refresh' ? '' : data?.access ?? '';
+  },
+  checkAuth: { url: '/api/auth/me', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
-  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' },
 });
 
 const authManager = new AuthStrategyManager([restStrategy]);
 
-// Проверка аутентификации
-const isAuthenticated = await restStrategy.checkAuth();
-
-// Выход из системы
-await restStrategy.signOut();
-
-// Очистка состояния
-restStrategy.clear();
+await authManager.checkAuth();
+await authManager.signOut();
 ```
 
-### Использование Supabase стратегии
+### Использование Supabase стратегии (v2)
+
+Нужны **core ^2.0.0** и **@auth-strategy-manager/supabase ^2.0.0**. В конфиге поле **`supabase`** (клиент), не `supabaseClient`. Подробности — [README пакета Supabase](packages/supabase/README_RU.md).
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -217,12 +276,17 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const supabaseStrategy = new SupabaseStrategy({
-  supabaseClient: supabase,
+  supabase,
   name: 'supabase',
   signInUrl: 'https://myapp.com/login',
 } satisfies SupabaseConfig);
 
 const authManager = new AuthStrategyManager([supabaseStrategy]);
+
+const state = await authManager.checkAuth();
+await authManager.signIn({ email: 'user@example.com', password: 'password123' });
+await authManager.refreshToken();
+await authManager.signOut();
 ```
 
 ### Использование множественных стратегий
@@ -241,18 +305,19 @@ const keycloakStrategy = new KeycloakStrategy({
 });
 
 const restStrategy = new RestStrategy({
-  accessToken: { key: 'access', storage: 'sessionStorage' },
-  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
+  name: 'rest',
+  getToken: (response) =>
+    (response as { data?: { access?: string } }).data?.access ?? '',
+  checkAuth: { url: '/api/auth/me', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
-  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' },
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy, restStrategy]);
+authManager.use('keycloak');
 
-// Проверка аутентификации (попробует обе стратегии)
-const isAuthenticated = await authManager.checkAuth();
+await authManager.checkAuth();
 ```
 
 ## 🏗️ Архитектура
@@ -263,15 +328,13 @@ const isAuthenticated = await authManager.checkAuth();
 
 - `AuthStrategyManager` — главный класс менеджера
 - `Strategy` — интерфейс для всех стратегий
-- `StrategyHelper` — вспомогательный класс для управления состоянием
+- `AuthStorageManager`, `StrategyNameStorage`, `AuthStorage` — модель хранения v2
 - Классы ошибок и константы
 
 ### Пакет Keycloak (@auth-strategy-manager/keycloak)
 
-Предоставляет интеграцию с Keycloak:
-
-- `KeycloakStrategy` — стратегия аутентификации Keycloak
-- Типы конфигурации для Keycloak
+- **v2** — `KeycloakStrategy` возвращает `AuthManagerData`; вместе с **core ^2.0.0**
+- [README_RU](packages/keycloak/README_RU.md) — чеклист перед тестом
 
 ### Пакет REST (@auth-strategy-manager/rest)
 
@@ -282,10 +345,8 @@ const isAuthenticated = await authManager.checkAuth();
 
 ### Пакет Supabase (@auth-strategy-manager/supabase)
 
-Предоставляет интеграцию с Supabase:
-
-- `SupabaseStrategy` — стратегия аутентификации Supabase
-- Типы конфигурации для Supabase
+- **v2** — `checkAuth` / `signIn` / `signUp` / `refreshToken` возвращают или дополняют ответ **`AuthManagerData`**; вместе с **core ^2.0.0** (peer dependency)
+- [README_RU](packages/supabase/README_RU.md) — чеклист интеграции и breaking changes относительно v1
 
 ## 📖 Документация
 
@@ -340,4 +401,30 @@ ISC License
 
 ---
 
-**Auth Strategy Manager** - сделайте аутентификацию простой и гибкой! 🔐 
+**Auth Strategy Manager** - сделайте аутентификацию простой и гибкой! 🔐
+
+### Интерфейс Strategy
+
+```typescript
+type AuthManagerData = {
+  isAuthenticated: boolean;
+  strategyName: string;
+  accessToken: string;
+  refreshToken?: string;
+};
+
+interface Strategy {
+  name: string;
+  token?: string;
+  isAuthenticated?: boolean;
+  startUrl?: string;
+  signInUrl?: string;
+
+  checkAuth(): Promise<AuthManagerData>;
+  signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
+  signOut(): Promise<void>;
+  refreshToken<T>(args?: T): Promise<AuthManagerData>;
+  clear?(): void;
+}
+```

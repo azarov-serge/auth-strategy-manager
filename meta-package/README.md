@@ -14,7 +14,7 @@ A flexible library for managing authentication with support for multiple strateg
 
 This repository contains the following packages:
 
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - `AuthStrategyManager`, `Strategy`, `AuthStorageManager`, `StrategyNameStorage`, errors, constants.
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Core authentication strategy manager: `AuthStrategyManager`, `Strategy`, `AuthStorageManager`, `StrategyNameStorage`, errors, constants.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Keycloak strategy
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - REST API strategy
 - **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** - Supabase strategy (**v2**, peer **core ^2.0.0**)
@@ -62,9 +62,9 @@ import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  public checkAuth = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<AuthManagerData> => {
     // Your authentication logic
-    return true;
+    return { isAuthenticated: true, strategyName: this.name, accessToken: "", refreshToken: undefined };
   };
   
   public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
@@ -82,7 +82,7 @@ class CustomStrategy implements Strategy {
     this.clearStorage();
   };
   
-  public refreshToken = async <T>(args?: T): Promise<void> => {
+  public refreshToken = async <T>(args?: T): Promise<AuthManagerData> => {
     // Your token refresh logic
   };
 
@@ -119,12 +119,78 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
 - `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.
-- `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Proxy to the active strategy `refreshToken` (if there is an active strategy).
+- `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Proxy to the active strategy `refreshToken` and return normalized auth state.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
 - `use(strategyName: string): void` - Set the active strategy by name (only needed when using multiple strategies)
 - `clear(): void` - Clear authentication state and reset all strategies
 
 `AuthStrategyManager` implements the `Strategy` interface and can be used as a facade over the active strategy.
+
+### AuthManager Token Storage Policy (Best Practice)
+
+`AuthStrategyManager` is the single place that controls auth state, active strategy selection, and token storage policy.
+
+Default policy ("security-first", recommended today):
+
+- `accessToken`: `HTTP_ONLY_COOKIE`
+- `refreshToken`: `HTTP_ONLY_COOKIE`
+
+You can override this behavior for specific app needs (`sessionStorage` / `localStorage`), but for critical flows prefer explicit configuration.
+
+#### Recommended patterns
+
+1) `access: HTTPOnly cookie` + `refresh: HTTPOnly cookie` (default)
+
+- Most common in security-first teams and BFF/server-session architectures.
+- Pros: minimal XSS exposure for tokens.
+- Cons: requires careful CORS/CSRF handling and backend discipline.
+
+2) `access: sessionStorage` + `refresh: HTTPOnly cookie` (common SPA compromise)
+
+- Access token is available to JS for Bearer workflows.
+- Refresh token stays protected from JS.
+- Good balance between UX and security for many SPAs.
+
+#### Example 1: access + refresh in HTTPOnly cookies (default)
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'HTTP_ONLY_COOKIE'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Example 2: access in sessionStorage + refresh in HTTPOnly cookie
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'sessionStorage'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Patterns that are usually not recommended
+
+3) `access: sessionStorage` + `refresh: sessionStorage`
+
+- Sometimes acceptable for low-risk internal apps.
+- Downside: both tokens are JS-readable (higher XSS risk).
+
+4) `access: sessionStorage` + `refresh: localStorage`
+
+- Rare and controversial.
+- Used for persistence across browser restarts, but security is weaker due to long-lived refresh in `localStorage`.
+
+5) `access: localStorage` + `refresh: localStorage`
+
+- Historically common, now generally treated as an anti-pattern for public apps.
+- Highest XSS attack surface among these options.
 
 #### Usage Examples
 
@@ -132,6 +198,7 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 // Create manager with strategies
 const authManager = new AuthStrategyManager([strategy1, strategy2]);
 
+// Normalized auth state (persisted via AuthStorageManager)
 const authState = await authManager.checkAuth();
 
 // Switch to specific strategy
@@ -146,7 +213,7 @@ authManager.clear();
 
 ### Using Keycloak Strategy (v2)
 
-Requires **core ^2.0.0** and **@auth-strategy-manager/keycloak ^2.0.0**. Checklist: [Keycloak package README](../packages/keycloak/README.md).
+Requires **core ^2.0.0** and **@auth-strategy-manager/keycloak ^2.0.0**. See the [Keycloak package README](packages/keycloak/README.md) for the full checklist.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -173,7 +240,7 @@ await authManager.signOut();
 
 ### Using REST Strategy (v2)
 
-Configure token storage on **`AuthStrategyManager`** via **`AuthStorageManager`**.
+Token storage is configured on **`AuthStrategyManager`** via **`AuthStorageManager`**, not on `RestStrategy`. Only pass URL endpoints and `getToken` here.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -199,7 +266,7 @@ await authManager.signOut();
 
 ### Using Supabase Strategy (v2)
 
-Requires **core ^2.0.0** and **@auth-strategy-manager/supabase ^2.0.0**. Config uses **`supabase`** (client). Checklist: [Supabase package README](../packages/supabase/README.md).
+Requires **core ^2.0.0** and **@auth-strategy-manager/supabase ^2.0.0**. Config field is **`supabase`** (the Supabase client), not `supabaseClient`. See [Supabase package README](packages/supabase/README.md).
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -216,7 +283,7 @@ const supabaseStrategy = new SupabaseStrategy({
 
 const authManager = new AuthStrategyManager([supabaseStrategy]);
 
-await authManager.checkAuth();
+const state = await authManager.checkAuth();
 await authManager.signIn({ email: 'user@example.com', password: 'password123' });
 await authManager.refreshToken();
 await authManager.signOut();
@@ -261,12 +328,13 @@ Contains the main classes and interfaces:
 
 - `AuthStrategyManager` - Main manager class
 - `Strategy` - Interface for all strategies
-- `AuthStorageManager`, `StrategyNameStorage`, `AuthStorage` - v2 storage
+- `AuthStorageManager`, `StrategyNameStorage`, `AuthStorage` - v2 storage model
 - Error classes and constants
 
 ### Keycloak Package (@auth-strategy-manager/keycloak)
 
-- **v2** — `AuthManagerData` + **core ^2.0.0**; [README](../packages/keycloak/README.md)
+- **v2** — `KeycloakStrategy` returns `AuthManagerData`; pair with **core ^2.0.0**
+- [README](packages/keycloak/README.md) — integration checklist before testing
 
 ### REST Package (@auth-strategy-manager/rest)
 
@@ -277,8 +345,8 @@ Provides REST API integration:
 
 ### Supabase Package (@auth-strategy-manager/supabase)
 
-- **v2** — `AuthManagerData` from `checkAuth` / `signIn` / `signUp` / `refreshToken`; **core ^2.0.0** peer
-- [README](../packages/supabase/README.md)
+- **v2** — `checkAuth` / `signIn` / `signUp` / `refreshToken` return or merge **`AuthManagerData`**; pair with **core ^2.0.0** (peer dependency)
+- [README](packages/supabase/README.md) — integration checklist and breaking changes from v1
 
 ## 📖 Documentation
 
@@ -351,7 +419,7 @@ interface Strategy {
   isAuthenticated?: boolean;
   startUrl?: string;
   signInUrl?: string;
-
+  
   checkAuth(): Promise<AuthManagerData>;
   signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
   signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;

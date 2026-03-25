@@ -1,11 +1,11 @@
 # @auth-strategy-manager/supabase
 
-Supabase strategy for auth-strategy-manager.
+Supabase strategy for [auth-strategy-manager](https://github.com/azarov-serge/auth-strategy-manager). **v2** targets `@auth-strategy-manager/core` **^2.0.0**.
 
-## 🌍 Documentation in Other Languages
+## Documentation in other languages
 
-- [🇷🇺 Русский (Russian)](README_RU.md)
-- [🇺🇸 English (Current)](README.md)
+- [Russian (Русский)](README_RU.md)
+- English (this file)
 
 ## Installation
 
@@ -15,46 +15,44 @@ npm install @auth-strategy-manager/supabase @auth-strategy-manager/core @supabas
 
 ## Usage
 
+Use `AuthStrategyManager` from **core** for persistence (`AuthStorageManager`, strategy name, tokens). `SupabaseStrategy` uses the Supabase client and returns `AuthManagerData` from `checkAuth`, `signIn`, `signUp`, and `refreshToken`.
+
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
-import { SupabaseStrategy, SupabaseConfig } from '@auth-strategy-manager/supabase';
+import { SupabaseStrategy } from '@auth-strategy-manager/supabase';
 import { createClient } from '@supabase/supabase-js';
 
-// Create Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Create Supabase strategy
 const supabaseStrategy = new SupabaseStrategy({
   supabase,
   name: 'supabase',
   signInUrl: 'https://myapp.com/login',
-} satisfies SupabaseConfig);
+});
 
-// Use with strategy manager
 const authManager = new AuthStrategyManager([supabaseStrategy]);
 
-// Check authentication
-const isAuthenticated = await supabaseStrategy.checkAuth();
-
-// Sign in
-const signInResult = await supabaseStrategy.signIn({
-  email: 'user@example.com',
-  password: 'password123',
-});
-
-// Sign up
-const signUpResult = await supabaseStrategy.signUp({
-  email: 'user@example.com',
-  password: 'password123',
-  username: 'user',
-});
-
-// Sign out
-await supabaseStrategy.signOut();
-
-// Refresh token
-await supabaseStrategy.refreshToken();
+const state = await authManager.checkAuth();
+await authManager.signIn({ email: 'user@example.com', password: 'password123' });
+await authManager.signUp({ email: 'user@example.com', password: 'password123', username: 'user' });
+await authManager.refreshToken();
+await authManager.signOut();
 ```
+
+### Before you test (integration checklist)
+
+- Install **`@auth-strategy-manager/core@^2.0.0`** together with **`@auth-strategy-manager/supabase@^2.0.0`** (peer dependency).
+- Prefer **`authManager.checkAuth()` / `signIn()` / `signUp()` / `refreshToken()` / `signOut()`** so `AuthStorageManager` stays in sync with `AuthManagerData`. Calling only `supabaseStrategy.*` skips manager persistence.
+- Strategy name and tokens are owned by **core** `AuthStrategyManager` / `AuthStorageManager`.
+- With **multiple strategies**, call **`authManager.use('supabase')`** (same string as `name` in config, default is `'supabase'`).
+
+## Breaking changes from v1
+
+- **`checkAuth`** returns `Promise<AuthManagerData>` (not `boolean`). Prefer `authManager.checkAuth()` so storage stays in sync.
+- **`refreshToken`** returns `Promise<AuthManagerData>` (not `void`).
+- **`signIn` / `signUp`** merge **`AuthManagerData`** into the returned object (Supabase payload plus `isAuthenticated`, `strategyName`, `accessToken`, `refreshToken`).
+- This package does not duplicate active-strategy or auth flags — use **core** for persistence.
+- **Peer dependency**: install `@auth-strategy-manager/core` **^2.0.0** yourself; it is no longer a direct dependency of this package.
 
 ## Configuration
 
@@ -71,9 +69,11 @@ type SupabaseConfig = {
 
 ### Parameters
 
-- `supabase` - Supabase client instance
-- `name` - Strategy name (default: 'supabase')
-- `signInUrl` - URL for redirect after logout
+- `supabase` — Supabase client instance
+- `name` — Strategy name (default: `'supabase'`)
+- `signInUrl` — URL for redirect after logout / custom flows
+
+Token persistence is configured on **core** `AuthStrategyManager` via `AuthStorageManager`, not on this strategy.
 
 ## API
 
@@ -87,27 +87,21 @@ constructor(config: SupabaseConfig)
 
 #### Methods
 
-- `checkAuth(): Promise<boolean>` - Check authentication
-- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign in user (expects `{ email, password }`)
-- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign up user (expects `{ email, password, username }`)
-- `signOut(): Promise<void>` - Sign out user
-- `refreshToken<T>(args?: T): Promise<void>` - Refresh token
-- `clear(): void` - Clear authentication state
-- `getCurrentUserId(): Promise<string | null>` - Get current user id from session
-- `getSessionInfo(): Promise<SessionInfo>` - Get session info (isAuthenticated, userId)
+- `checkAuth(): Promise<AuthManagerData>`
+- `signIn<T, D>(config?: D): Promise<T>` — expects `{ email, password }`; return type merges `AuthResponse` with `AuthManagerData`
+- `signUp<T, D>(config?: D): Promise<T>` — expects `{ email, password, username }`; same merge (session may be absent until email confirmation)
+- `signOut(): Promise<void>`
+- `refreshToken<T>(args?: T): Promise<AuthManagerData>`
+- `clear(): void` — clears in-memory token mirror on the strategy; prefer `authManager.clear()` for full storage sync
+- `getCurrentUserId(): Promise<string | null>`
+- `getSessionInfo(): Promise<SessionInfo>`
 
 #### Properties
 
-- `name: string` - Strategy name
-- `supabase: SupabaseClient` - Supabase client instance
-- `token?: string` - Current access token
-- `isAuthenticated: boolean` - Authentication status
-
-## Token handling
-
-Tokens are stored in memory inside the strategy instance (`token` property) and in Supabase auth session. The strategy uses Supabase SDK to manage session and tokens.
+- `name`, `supabase`, `signInUrl`
+- `token` (read-only) / `isAuthenticated` — mirror of the last known session from Supabase operations
+- `startUrl` — get/set in-memory redirect base (for manager alignment)
 
 ## License
 
 ISC
-

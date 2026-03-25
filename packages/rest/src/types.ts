@@ -7,27 +7,12 @@ export type UrlConfig = {
 
 export type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
 
-export type StorageType = 'sessionStorage' | 'localStorage';
-
-export type TokenConfig = {
-  key: string;
-  storageType: StorageType;
-  storage?: Storage;
-  /** Extract access / refresh token from API response */
-  getToken?: (response: unknown, url?: string) => string;
-};
-
-export type AccessTokenConfig = TokenConfig;
-
-export type RefreshTokenConfig = TokenConfig;
-
-export type Config = Record<UrlName, UrlConfig> & {
+/** All URL endpoints are optional — pass only what you use (e.g. omit `signOut` for local-only logout via sessionStorage/localStorage). */
+export type Config = Partial<Record<UrlName, UrlConfig>> & {
   name?: string;
-  /** Where and how to store the access token. Default: { key: 'access', storage: 'sessionStorage' } */
-  accessToken?: Partial<AccessTokenConfig>;
-  /** Optional: where and how to store the refresh token (e.g. access in sessionStorage, refresh in localStorage) */
-  refreshToken?: Partial<RefreshTokenConfig>;
   /** URL for redirecting to the authorization page */
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
+  /** Extract access / refresh token from API response */
+  getToken?: (response: unknown, options?: { url?: string; type: 'access' | 'refresh' }) => string;
 };

@@ -1,11 +1,11 @@
 # @auth-strategy-manager/supabase
 
-Стратегия Supabase для auth-strategy-manager.
+Стратегия Supabase для [auth-strategy-manager](https://github.com/azarov-serge/auth-strategy-manager). **v2** рассчитана на `@auth-strategy-manager/core` **^2.0.0**.
 
-## 🌍 Документация на других языках
+## Документация на других языках
 
-- [🇺🇸 English (Английский)](README.md)
-- [🇷🇺 Русский (Текущий)](README_RU.md)
+- [English (Английский)](README.md)
+- Русский (этот файл)
 
 ## Установка
 
@@ -15,46 +15,44 @@ npm install @auth-strategy-manager/supabase @auth-strategy-manager/core @supabas
 
 ## Использование
 
+Используйте `AuthStrategyManager` из **core** для персистентности (`AuthStorageManager`, имя стратегии, токены). `SupabaseStrategy` работает через клиент Supabase и возвращает `AuthManagerData` из `checkAuth`, `signIn`, `signUp` и `refreshToken`.
+
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
-import { SupabaseStrategy, SupabaseConfig } from '@auth-strategy-manager/supabase';
+import { SupabaseStrategy } from '@auth-strategy-manager/supabase';
 import { createClient } from '@supabase/supabase-js';
 
-// Создание Supabase клиента
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Создание Supabase стратегии
 const supabaseStrategy = new SupabaseStrategy({
   supabase,
   name: 'supabase',
   signInUrl: 'https://myapp.com/login',
-} satisfies SupabaseConfig);
+});
 
-// Использование с менеджером стратегий
 const authManager = new AuthStrategyManager([supabaseStrategy]);
 
-// Проверка аутентификации
-const isAuthenticated = await supabaseStrategy.checkAuth();
-
-// Вход в систему
-const signInResult = await supabaseStrategy.signIn({
-  email: 'user@example.com',
-  password: 'password123',
-});
-
-// Регистрация пользователя
-const signUpResult = await supabaseStrategy.signUp({
-  email: 'user@example.com',
-  password: 'password123',
-  username: 'user',
-});
-
-// Выход из системы
-await supabaseStrategy.signOut();
-
-// Обновление токена
-await supabaseStrategy.refreshToken();
+const state = await authManager.checkAuth();
+await authManager.signIn({ email: 'user@example.com', password: 'password123' });
+await authManager.signUp({ email: 'user@example.com', password: 'password123', username: 'user' });
+await authManager.refreshToken();
+await authManager.signOut();
 ```
+
+### Перед интеграцией (чеклист)
+
+- Установите **`@auth-strategy-manager/core@^2.0.0`** вместе с **`@auth-strategy-manager/supabase@^2.0.0`** (peer dependency).
+- Предпочитайте **`authManager.checkAuth()` / `signIn()` / `signUp()` / `refreshToken()` / `signOut()`**, чтобы `AuthStorageManager` оставался согласован с `AuthManagerData`. Вызовы только `supabaseStrategy.*` обходят персистентность менеджера.
+- Имя активной стратегии и токены ведёт **core** `AuthStrategyManager` / `AuthStorageManager`.
+- При **нескольких стратегиях** вызывайте **`authManager.use('supabase')`** (та же строка, что `name` в конфиге, по умолчанию `'supabase'`).
+
+## Изменения (breaking) относительно v1
+
+- **`checkAuth`** возвращает `Promise<AuthManagerData>`, а не `boolean`. Предпочтительно `authManager.checkAuth()` для синхронизации хранилища.
+- **`refreshToken`** возвращает `Promise<AuthManagerData>`, а не `void`.
+- **`signIn` / `signUp`** дополняют ответ полями **`AuthManagerData`** (данные Supabase плюс `isAuthenticated`, `strategyName`, `accessToken`, `refreshToken`).
+- В этом пакете нет дублирования флагов активной стратегии — персистентность через **core**.
+- **Peer dependency**: установите `@auth-strategy-manager/core` **^2.0.0** отдельно; прямой зависимости этого пакета на core больше нет.
 
 ## Конфигурация
 
@@ -71,9 +69,11 @@ type SupabaseConfig = {
 
 ### Параметры
 
-- `supabase` - Экземпляр Supabase клиента
-- `name` - Имя стратегии (по умолчанию: 'supabase')
-- `signInUrl` - URL для редиректа после выхода
+- `supabase` — экземпляр клиента Supabase
+- `name` — имя стратегии (по умолчанию: `'supabase'`)
+- `signInUrl` — URL редиректа после выхода / кастомные сценарии
+
+Персистентность токенов настраивается в **core** через `AuthStrategyManager` и `AuthStorageManager`, а не в этой стратегии.
 
 ## API
 
@@ -87,27 +87,21 @@ constructor(config: SupabaseConfig)
 
 #### Методы
 
-- `checkAuth(): Promise<boolean>` - Проверка аутентификации
-- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Вход пользователя (ожидает `{ email, password }`)
-- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Регистрация пользователя (ожидает `{ email, password, username }`)
-- `signOut(): Promise<void>` - Выход пользователя
-- `refreshToken<T>(args?: T): Promise<void>` - Обновление токена
-- `clear(): void` - Очистка состояния аутентификации
-- `getCurrentUserId(): Promise<string | null>` - Получить текущий user id из сессии
-- `getSessionInfo(): Promise<SessionInfo>` - Получить информацию о сессии (isAuthenticated, userId)
+- `checkAuth(): Promise<AuthManagerData>`
+- `signIn<T, D>(config?: D): Promise<T>` — ожидает `{ email, password }`; в возвращаемом объекте объединены `AuthResponse` и `AuthManagerData`
+- `signUp<T, D>(config?: D): Promise<T>` — ожидает `{ email, password, username }`; то же объединение (сессия может отсутствовать до подтверждения email)
+- `signOut(): Promise<void>`
+- `refreshToken<T>(args?: T): Promise<AuthManagerData>`
+- `clear(): void` — сбрасывает зеркало токена в памяти стратегии; для полной синхронизации с хранилищем предпочтительнее `authManager.clear()`
+- `getCurrentUserId(): Promise<string | null>`
+- `getSessionInfo(): Promise<SessionInfo>`
 
 #### Свойства
 
-- `name: string` - Имя стратегии
-- `supabase: SupabaseClient` - Экземпляр Supabase клиента
-- `token?: string` - Текущий access токен
-- `isAuthenticated: boolean` - Статус аутентификации
-
-## Работа с токенами
-
-Токены хранятся в памяти внутри экземпляра стратегии (`token` свойство), а также в сессии Supabase. Стратегия использует Supabase SDK для управления сессией и токенами.
+- `name`, `supabase`, `signInUrl`
+- `token` (только чтение) / `isAuthenticated` — отражают последнюю известную сессию после операций Supabase
+- `startUrl` — get/set база редиректа в памяти (для согласования с менеджером)
 
 ## Лицензия
 
 ISC
-

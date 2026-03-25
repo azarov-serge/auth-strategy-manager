@@ -14,10 +14,10 @@ A flexible library for managing authentication with support for multiple strateg
 
 This repository contains the following packages:
 
-- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Core authentication strategy manager: provides the main classes and interfaces for managing authentication strategies, including `AuthStrategyManager`, `Strategy`, `StrategyHelper`, error classes, and constants.
+- **[@auth-strategy-manager/core](https://www.npmjs.com/package/@auth-strategy-manager/core)** - Core authentication strategy manager: `AuthStrategyManager`, `Strategy`, `AuthStorageManager`, `StrategyNameStorage`, errors, constants.
 - **[@auth-strategy-manager/keycloak](https://www.npmjs.com/package/@auth-strategy-manager/keycloak)** - Keycloak strategy
 - **[@auth-strategy-manager/rest](https://www.npmjs.com/package/@auth-strategy-manager/rest)** - REST API strategy
-- **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** - Supabase strategy
+- **[@auth-strategy-manager/supabase](https://www.npmjs.com/package/@auth-strategy-manager/supabase)** - Supabase strategy (**v2**, peer **core ^2.0.0**)
 
 ## 🚀 Quick Start
 
@@ -62,9 +62,9 @@ import { AuthStrategyManager, Strategy } from '@auth-strategy-manager/core';
 class CustomStrategy implements Strategy {
   readonly name = 'custom';
   
-  public checkAuth = async (): Promise<boolean> => {
+  public checkAuth = async (): Promise<AuthManagerData> => {
     // Your authentication logic
-    return true;
+    return { isAuthenticated: true, strategyName: this.name, accessToken: "", refreshToken: undefined };
   };
   
   public signIn = async <T = unknown, D = undefined>(config?: D): Promise<T> => {
@@ -82,7 +82,7 @@ class CustomStrategy implements Strategy {
     this.clearStorage();
   };
   
-  public refreshToken = async <T>(args?: T): Promise<void> => {
+  public refreshToken = async <T>(args?: T): Promise<AuthManagerData> => {
     // Your token refresh logic
   };
 
@@ -115,16 +115,82 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 
 #### Methods
 
-- `checkAuth(): Promise<boolean>` - Check authentication status across all strategies. Returns true if any strategy is authenticated.
+- `checkAuth(): Promise<AuthManagerData>` - Check authentication status across all strategies and return normalized auth state.
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
 - `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.
-- `refreshToken<T>(args?: T): Promise<void>` - Proxy to the active strategy `refreshToken` (if there is an active strategy).
+- `refreshToken<T>(args?: T): Promise<AuthManagerData>` - Proxy to the active strategy `refreshToken` and return normalized auth state.
 - `setStrategies(strategies: Strategy[]): Promise<void>` - Replace all strategies with new ones
 - `use(strategyName: string): void` - Set the active strategy by name (only needed when using multiple strategies)
 - `clear(): void` - Clear authentication state and reset all strategies
 
 `AuthStrategyManager` implements the `Strategy` interface and can be used as a facade over the active strategy.
+
+### AuthManager Token Storage Policy (Best Practice)
+
+`AuthStrategyManager` is the single place that controls auth state, active strategy selection, and token storage policy.
+
+Default policy ("security-first", recommended today):
+
+- `accessToken`: `HTTP_ONLY_COOKIE`
+- `refreshToken`: `HTTP_ONLY_COOKIE`
+
+You can override this behavior for specific app needs (`sessionStorage` / `localStorage`), but for critical flows prefer explicit configuration.
+
+#### Recommended patterns
+
+1) `access: HTTPOnly cookie` + `refresh: HTTPOnly cookie` (default)
+
+- Most common in security-first teams and BFF/server-session architectures.
+- Pros: minimal XSS exposure for tokens.
+- Cons: requires careful CORS/CSRF handling and backend discipline.
+
+2) `access: sessionStorage` + `refresh: HTTPOnly cookie` (common SPA compromise)
+
+- Access token is available to JS for Bearer workflows.
+- Refresh token stays protected from JS.
+- Good balance between UX and security for many SPAs.
+
+#### Example 1: access + refresh in HTTPOnly cookies (default)
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'HTTP_ONLY_COOKIE'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Example 2: access in sessionStorage + refresh in HTTPOnly cookie
+
+```typescript
+import { AuthStorage, AuthStorageManager, StrategyNameStorage } from '@auth-strategy-manager/core';
+
+const storageManager = new AuthStorageManager({
+  strategyName: new StrategyNameStorage(),
+  accessToken: new AuthStorage('accessToken', 'sessionStorage'),
+  refreshToken: new AuthStorage('refreshToken', 'HTTP_ONLY_COOKIE'),
+});
+```
+
+#### Patterns that are usually not recommended
+
+3) `access: sessionStorage` + `refresh: sessionStorage`
+
+- Sometimes acceptable for low-risk internal apps.
+- Downside: both tokens are JS-readable (higher XSS risk).
+
+4) `access: sessionStorage` + `refresh: localStorage`
+
+- Rare and controversial.
+- Used for persistence across browser restarts, but security is weaker due to long-lived refresh in `localStorage`.
+
+5) `access: localStorage` + `refresh: localStorage`
+
+- Historically common, now generally treated as an anti-pattern for public apps.
+- Highest XSS attack surface among these options.
 
 #### Usage Examples
 
@@ -132,8 +198,8 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 // Create manager with strategies
 const authManager = new AuthStrategyManager([strategy1, strategy2]);
 
-// Check if user is authenticated
-const isAuthenticated = await authManager.checkAuth();
+// Normalized auth state (persisted via AuthStorageManager)
+const authState = await authManager.checkAuth();
 
 // Switch to specific strategy
 authManager.use('keycloak');
@@ -145,7 +211,9 @@ const currentStrategy = authManager.strategy;
 authManager.clear();
 ```
 
-### Using Keycloak Strategy
+### Using Keycloak Strategy (v2)
+
+Requires **core ^2.0.0** and **@auth-strategy-manager/keycloak ^2.0.0**. See the [Keycloak package README](packages/keycloak/README.md) for the full checklist.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -155,41 +223,50 @@ const keycloakStrategy = new KeycloakStrategy({
   keycloak: {
     realm: 'my-realm',
     url: 'https://keycloak.example.com',
-    clientId: 'my-client'
-  }
+    clientId: 'my-client',
+  },
+  signInUrl: 'https://myapp.com/login',
+  name: 'keycloak',
+  init: { flow: 'standard', onLoad: 'check-sso' },
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy]);
+keycloakStrategy.startUrl = authManager.startUrl ?? window.location.origin;
+
+await authManager.checkAuth();
+await authManager.signIn();
+await authManager.signOut();
 ```
 
-### Using REST Strategy
+### Using REST Strategy (v2)
+
+Token storage is configured on **`AuthStrategyManager`** via **`AuthStorageManager`**, not on `RestStrategy`. Only pass URL endpoints and `getToken` here.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
-  accessToken: { key: 'access', storage: 'sessionStorage' },
-  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
+  name: 'rest',
+  getToken: (response, options) => {
+    const data = (response as { data?: { access?: string } }).data;
+    return options?.type === 'refresh' ? '' : data?.access ?? '';
+  },
+  checkAuth: { url: '/api/auth/me', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
-  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' },
 });
 
 const authManager = new AuthStrategyManager([restStrategy]);
 
-// Check authentication
-const isAuthenticated = await restStrategy.checkAuth();
-
-// Sign out
-await restStrategy.signOut();
-
-// Clear state
-restStrategy.clear();
+await authManager.checkAuth();
+await authManager.signOut();
 ```
 
-### Using Supabase Strategy
+### Using Supabase Strategy (v2)
+
+Requires **core ^2.0.0** and **@auth-strategy-manager/supabase ^2.0.0**. Config field is **`supabase`** (the Supabase client), not `supabaseClient`. See [Supabase package README](packages/supabase/README.md).
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
@@ -199,12 +276,17 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const supabaseStrategy = new SupabaseStrategy({
-  supabaseClient: supabase,
+  supabase,
   name: 'supabase',
   signInUrl: 'https://myapp.com/login',
 } satisfies SupabaseConfig);
 
 const authManager = new AuthStrategyManager([supabaseStrategy]);
+
+const state = await authManager.checkAuth();
+await authManager.signIn({ email: 'user@example.com', password: 'password123' });
+await authManager.refreshToken();
+await authManager.signOut();
 ```
 
 ### Using Multiple Strategies
@@ -223,18 +305,19 @@ const keycloakStrategy = new KeycloakStrategy({
 });
 
 const restStrategy = new RestStrategy({
-  accessToken: { key: 'access', storage: 'sessionStorage' },
-  checkAuth: { url: '/api/auth/check-auth', method: 'GET' },
+  name: 'rest',
+  getToken: (response) =>
+    (response as { data?: { access?: string } }).data?.access ?? '',
+  checkAuth: { url: '/api/auth/me', method: 'GET' },
   signIn: { url: '/api/auth/sign-in', method: 'POST' },
   signUp: { url: '/api/auth/sign-up', method: 'POST' },
-  signOut: { url: '/api/auth/sign-out', method: 'POST' },
   refresh: { url: '/api/auth/refresh', method: 'POST' },
 });
 
 const authManager = new AuthStrategyManager([keycloakStrategy, restStrategy]);
+authManager.use('keycloak');
 
-// Check authentication (will try both strategies)
-const isAuthenticated = await authManager.checkAuth();
+await authManager.checkAuth();
 ```
 
 ## 🏗️ Architecture
@@ -245,15 +328,13 @@ Contains the main classes and interfaces:
 
 - `AuthStrategyManager` - Main manager class
 - `Strategy` - Interface for all strategies
-- `StrategyHelper` - Helper class for state management
+- `AuthStorageManager`, `StrategyNameStorage`, `AuthStorage` - v2 storage model
 - Error classes and constants
 
 ### Keycloak Package (@auth-strategy-manager/keycloak)
 
-Provides Keycloak integration:
-
-- `KeycloakStrategy` - Keycloak authentication strategy
-- Keycloak-specific configuration types
+- **v2** — `KeycloakStrategy` returns `AuthManagerData`; pair with **core ^2.0.0**
+- [README](packages/keycloak/README.md) — integration checklist before testing
 
 ### REST Package (@auth-strategy-manager/rest)
 
@@ -264,10 +345,8 @@ Provides REST API integration:
 
 ### Supabase Package (@auth-strategy-manager/supabase)
 
-Provides Supabase integration:
-
-- `SupabaseStrategy` - Supabase authentication strategy
-- Supabase-specific configuration types
+- **v2** — `checkAuth` / `signIn` / `signUp` / `refreshToken` return or merge **`AuthManagerData`**; pair with **core ^2.0.0** (peer dependency)
+- [README](packages/supabase/README.md) — integration checklist and breaking changes from v1
 
 ## 📖 Documentation
 
@@ -327,6 +406,13 @@ If you have questions or issues, create an issue in the GitHub repository.
 ### Strategy Interface
 
 ```typescript
+type AuthManagerData = {
+  isAuthenticated: boolean;
+  strategyName: string;
+  accessToken: string;
+  refreshToken?: string;
+};
+
 interface Strategy {
   name: string;
   token?: string;
@@ -334,10 +420,11 @@ interface Strategy {
   startUrl?: string;
   signInUrl?: string;
   
-  checkAuth(): Promise<boolean>;
-  signIn<T = unknown, D = undefined>(config?: D): Promise<T>;
-  signUp<T = unknown, D = undefined>(config?: D): Promise<T>;
+  checkAuth(): Promise<AuthManagerData>;
+  signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
+  signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>;
   signOut(): Promise<void>;
-  refreshToken<T>(args?: T): Promise<void>;
+  refreshToken<T>(args?: T): Promise<AuthManagerData>;
+  clear?(): void;
 }
-``` 
+```

@@ -1,32 +1,31 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { Strategy, StrategyHelper } from '@auth-strategy-manager/core';
-import type { AuthResponse, Config, SessionInfo } from './types';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import type { AuthManagerData, AuthResponse, Config, SessionInfo } from './types';
 
 const DEFAULT_NAME = 'supabase';
 
-export class SupabaseStrategy implements Strategy {
+/** Compatible with `Strategy` from `@auth-strategy-manager/core` v2. Use `AuthStrategyManager` for storage sync. */
+export class SupabaseStrategy {
   public readonly name: string;
   public readonly supabase: SupabaseClient;
   public signInUrl?: string;
 
-  private readonly helper: StrategyHelper;
   private tokenInternal?: string;
+  private startUrlValue?: string;
 
   constructor(config: Config) {
     const { name, supabase, signInUrl } = config;
 
-    this.helper = new StrategyHelper();
     this.name = name || DEFAULT_NAME;
     this.supabase = supabase;
     this.signInUrl = signInUrl;
   }
 
   get startUrl(): string | undefined {
-    return this.helper.startUrl;
+    return this.startUrlValue;
   }
 
   set startUrl(url: string | undefined) {
-    this.helper.startUrl = url;
+    this.startUrlValue = url;
   }
 
   get token(): string | undefined {
@@ -34,33 +33,58 @@ export class SupabaseStrategy implements Strategy {
   }
 
   get isAuthenticated(): boolean {
-    return this.helper.isAuthenticated;
+    return Boolean(this.tokenInternal);
   }
 
-  public async checkAuth(): Promise<boolean> {
-    const hasSession = await this.hasSession();
-
-    if (hasSession) {
-      this.helper.activeStrategyName = this.name;
+  private sessionToAuthManagerData(session: Session | null): AuthManagerData {
+    if (!session?.access_token) {
+      return {
+        isAuthenticated: false,
+        strategyName: this.name,
+        accessToken: '',
+        refreshToken: undefined,
+      };
     }
 
-    return hasSession;
+    return {
+      isAuthenticated: true,
+      strategyName: this.name,
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token ?? undefined,
+    };
   }
 
-  public async signIn<T = unknown, D = undefined>(config?: D): Promise<T> {
+  public checkAuth = async (): Promise<AuthManagerData> => {
+    try {
+      const { data, error } = await this.supabase.auth.getSession();
+
+      if (error || !data.session) {
+        this.tokenInternal = undefined;
+        return this.sessionToAuthManagerData(null);
+      }
+
+      this.tokenInternal = data.session.access_token;
+      return this.sessionToAuthManagerData(data.session);
+    } catch {
+      this.tokenInternal = undefined;
+      return this.sessionToAuthManagerData(null);
+    }
+  };
+
+  public signIn = async <T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T> => {
     const { email, password } = (config as { email: string; password: string }) || {};
 
     if (!email || !password) {
       throw new Error('Email and password are required for sign in');
     }
 
-    this.helper.activeStrategyName = this.name;
+    const { response, session } = await this.signInInternal(email, password);
+    const authData = this.sessionToAuthManagerData(session);
 
-    const response = await this.signInInternal(email, password);
-    return response as T;
-  }
+    return { ...(response as object), ...authData } as T;
+  };
 
-  public async signUp<T = unknown, D = undefined>(config?: D): Promise<T> {
+  public signUp = async <T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T> => {
     const { email, password, username } =
       (config as {
         email: string;
@@ -72,45 +96,40 @@ export class SupabaseStrategy implements Strategy {
       throw new Error('Email, password and username are required for sign up');
     }
 
-    this.helper.activeStrategyName = this.name;
+    const { response, session } = await this.signUpInternal(email, password, username);
+    const authData = this.sessionToAuthManagerData(session);
 
-    const response = await this.signUpInternal(email, password, username);
-    return response as T;
-  }
+    return { ...(response as object), ...authData } as T;
+  };
 
-  public async signOut(): Promise<void> {
+  public signOut = async (): Promise<void> => {
     const { error } = await this.supabase.auth.signOut();
     if (error) {
       throw error;
     }
 
     this.clear();
-  }
+  };
 
-  public async refreshToken<T = void>(_args?: T): Promise<void> {
-    await this.refreshSession();
-  }
-
-  public clear(): void {
-    this.tokenInternal = undefined;
-    this.helper.reset();
-  }
-
-  private async hasSession(): Promise<boolean> {
+  public refreshToken = async <T>(_args?: T): Promise<AuthManagerData> => {
     try {
-      const { data, error } = await this.supabase.auth.getSession();
-      const hasSession = !error && !!data.session;
-
-      this.helper.isAuthenticated = hasSession;
-      this.tokenInternal = data.session?.access_token;
-
-      return hasSession;
+      await this.refreshSession();
+      const { data } = await this.supabase.auth.getSession();
+      return this.sessionToAuthManagerData(data.session ?? null);
     } catch {
-      this.helper.isAuthenticated = false;
       this.tokenInternal = undefined;
-      return false;
+      return {
+        isAuthenticated: false,
+        strategyName: this.name,
+        accessToken: '',
+        refreshToken: undefined,
+      };
     }
-  }
+  };
+
+  public clear = (): void => {
+    this.tokenInternal = undefined;
+  };
 
   public async getCurrentUserId(): Promise<string | null> {
     try {
@@ -124,9 +143,7 @@ export class SupabaseStrategy implements Strategy {
       }
 
       return user.id;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[SupabaseStrategy] Failed to get userId:', error);
+    } catch {
       return null;
     }
   }
@@ -155,21 +172,19 @@ export class SupabaseStrategy implements Strategy {
     }
 
     const { data } = await this.supabase.auth.getSession();
-    if (data.session) {
-      this.tokenInternal = data.session.access_token;
-      this.helper.isAuthenticated = true;
-    }
+    this.tokenInternal = data.session?.access_token;
   }
 
-  private async signInInternal(email: string, password: string): Promise<AuthResponse> {
+  private async signInInternal(
+    email: string,
+    password: string
+  ): Promise<{ response: AuthResponse; session: Session | null }> {
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      // eslint-disable-next-line no-console
-      console.error('Supabase sign-in error:', error);
       throw error;
     }
 
@@ -184,16 +199,15 @@ export class SupabaseStrategy implements Strategy {
     };
 
     this.tokenInternal = data.session.access_token;
-    this.helper.isAuthenticated = true;
 
-    return response;
+    return { response, session: data.session };
   }
 
   private async signUpInternal(
     email: string,
     password: string,
-    username: string,
-  ): Promise<AuthResponse> {
+    username: string
+  ): Promise<{ response: AuthResponse; session: Session | null }> {
     const { data, error } = await this.supabase.auth.signUp({
       email,
       password,
@@ -208,18 +222,17 @@ export class SupabaseStrategy implements Strategy {
       throw error;
     }
 
+    const session = data.session ?? null;
     const response: AuthResponse = {
-      access_token: data.session?.access_token || '',
-      refresh_token: data.session?.refresh_token || '',
+      access_token: session?.access_token ?? '',
+      refresh_token: session?.refresh_token ?? '',
       user: data.user ?? null,
     };
 
-    if (data.session?.access_token) {
-      this.tokenInternal = data.session.access_token;
-      this.helper.isAuthenticated = true;
+    if (session?.access_token) {
+      this.tokenInternal = session.access_token;
     }
 
-    return response;
+    return { response, session };
   }
 }
-

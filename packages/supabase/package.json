@@ -1,6 +1,6 @@
 {
   "name": "@auth-strategy-manager/supabase",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Supabase strategy for auth-strategy-manager",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,13 +11,14 @@
   },
   "files": [
     "dist/**/*",
-    "README.md"
+    "README.md",
+    "README_RU.md"
   ],
   "dependencies": {
-    "@auth-strategy-manager/core": "^1.0.6",
     "@supabase/supabase-js": "2.95.3"
   },
   "peerDependencies": {
+    "@auth-strategy-manager/core": "^2.0.0",
     "@supabase/supabase-js": "2.95.3"
   },
   "keywords": [
@@ -38,4 +39,3 @@
   },
   "homepage": "https://github.com/azarov-serge/auth-strategy-manager#readme"
 }
-

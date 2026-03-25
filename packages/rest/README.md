@@ -1,11 +1,11 @@
 # @auth-strategy-manager/rest
 
-REST API strategy for auth-strategy-manager.
+REST API strategy for [auth-strategy-manager](https://github.com/azarov-serge/auth-strategy-manager). **v2** aligns with `@auth-strategy-manager/core` **^2.0.0**.
 
-## 🌍 Documentation in Other Languages
+## Documentation in other languages
 
-- [🇷🇺 Русский (Russian)](README_RU.md)
-- [🇺🇸 English (Current)](README.md)
+- [Russian (Русский)](README_RU.md)
+- English (this file)
 
 ## Installation
 
@@ -13,142 +13,145 @@ REST API strategy for auth-strategy-manager.
 npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
 ```
 
+Use **core 2.x** with **rest 2.x**.
+
 ## Usage
+
+`RestStrategy` performs HTTP calls and builds `AuthManagerData` from responses using `getToken`. **Persisting** tokens and strategy name is done by `AuthStrategyManager` + `AuthStorageManager` from `@auth-strategy-manager/core` — not by this class.
 
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 
-// Create custom axios instance
 const axiosInstance = axios.create({
   baseURL: 'https://api.example.com',
-  timeout: 5000
+  timeout: 5000,
 });
 
-// Create REST strategy
 const restStrategy = new RestStrategy({
   name: 'my-rest',
-  signInUrl: 'https://myapp.com/sign-in',
+  signInUrl: '/login',
   axiosInstance,
-  accessToken: {
-    key: 'access_token',
-    storage: 'sessionStorage',
-    getToken: (response: unknown) => (response as any).data?.access_token || (response as any).access_token,
+  getToken: (response, options) => {
+    const data = (response as { data?: { access?: string; refresh?: string } }).data;
+    if (options?.type === 'refresh') return data?.refresh ?? '';
+    return data?.access ?? '';
   },
-  checkAuth: { url: '/auth/check-auth', method: 'GET' },
-  signIn: { url: '/auth/sign-in', method: 'POST' },
-  signUp: { url: '/auth/sign-up', method: 'POST' },
-  signOut: { url: '/auth/sign-out', method: 'POST' },
+  checkAuth: { url: '/auth/me', method: 'GET' },
+  signIn: { url: '/auth/login', method: 'POST' },
+  signUp: { url: '/auth/register', method: 'POST' },
   refresh: { url: '/auth/refresh', method: 'POST' },
+  // signOut omitted → RestStrategy.signOut() is a no-op; AuthStrategyManager still clears storage
 });
 
-// Use with strategy manager
 const authManager = new AuthStrategyManager([restStrategy]);
 
-// Sign in with custom data
-const loginResult = await restStrategy.signIn<unknown, AxiosRequestConfig>({
-  data: {
-    username: 'user@example.com',
-    password: 'password123'
-  }
+await restStrategy.signIn<unknown, AxiosRequestConfig>({
+  data: { email: 'user@example.com', password: 'secret' },
 });
 
-// Check authentication
-const isAuthenticated = await restStrategy.checkAuth();
+const state = await authManager.checkAuth();
+await authManager.signOut();
+```
 
-// Sign out
-await restStrategy.signOut();
+With a server **sign-out** endpoint:
 
-// Clear state
-restStrategy.clear();
+```typescript
+const restStrategy = new RestStrategy({
+  // ...same as above
+  signOut: { url: '/auth/logout', method: 'POST' },
+});
 ```
 
 ## Configuration
 
-### RestConfig
+### `RestConfig` (`Config`)
+
+Exported as `RestConfig` from this package.
 
 ```typescript
-type RestConfig = {
-  checkAuth: UrlConfig;
-  signIn: UrlConfig;
-  signUp: UrlConfig;
-  signOut: UrlConfig;
-  refresh: UrlConfig;
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+
+type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
+
+type UrlConfig = {
+  url: string;
+  method?: AxiosRequestConfig['method'];
+};
+
+type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
   name?: string;
-  accessToken?: AccessTokenConfig;
-  refreshToken?: RefreshTokenConfig;
+  /** Redirect target for the sign-in page (app use) */
   signInUrl?: string;
   axiosInstance?: AxiosInstance;
+  /** Map API responses to access / refresh strings */
+  getToken?: (
+    response: unknown,
+    options?: { url?: string; type: 'access' | 'refresh' },
+  ) => string;
 };
-
-type AccessTokenConfig = {
-  /** Storage key used for access token */
-  key: string;
-  /** Built-in storage type used by default implementation */
-  storageType: 'sessionStorage' | 'localStorage';
-  /** Optional custom Storage implementation (e.g. in-memory, namespaced) */
-  storage?: Storage;
-  /** Extract access token from API response */
-  getToken?: (response: unknown, url?: string) => string;
-};
-
-type RefreshTokenConfig = {
-  /** Storage key used for refresh token */
-  key: string;
-  /** Built-in storage type used by default implementation */
-  storageType: 'sessionStorage' | 'localStorage';
-  /** Optional custom Storage implementation (e.g. in-memory, namespaced) */
-  storage?: Storage;
-  /** Extract refresh token from API response */
-  getToken?: (response: unknown, url?: string) => string;
-};
-
-type UrlConfig = { url: string; method?: string };
 ```
+
+All **URL entries are optional** in the type — pass only what you call. Runtime methods still **throw** if a required URL for that operation is missing (e.g. `signIn` without `signIn` in config).
 
 ### Parameters
 
-- `checkAuth` - Endpoint for checking authentication
-- `signIn` - Endpoint for user sign in
-- `signUp` - Endpoint for user registration
-- `signOut` - Endpoint for user sign out
-- `refresh` - Endpoint for token refresh
-- `name` - Strategy name (default: 'rest')
-- `accessToken` - Access token config: `key`, `storageType` (`'sessionStorage' | 'localStorage'`), optional `storage` (any custom implementation of the `Storage` interface, e.g. in-memory, namespaced, or the built-in storages), and `getToken`. If omitted, `{ key: 'access', storageType: 'sessionStorage' }` is used by default.
-- `refreshToken` - Optional refresh token config: `key`, `storageType`, optional `storage` (any custom `Storage` implementation), and `getToken` (e.g. access in sessionStorage, refresh in localStorage)
-- `signInUrl` - URL for redirect after logout
-- `axiosInstance` - Custom axios instance
+| Field | Description |
+|--------|-------------|
+| `checkAuth` | Request used by `checkAuth()`. |
+| `signIn` | Request used by `signIn()`. |
+| `signUp` | Request used by `signUp()`. |
+| `signOut` | **Optional.** If omitted (or empty `url`), `signOut()` does not call the network; use `AuthStrategyManager.signOut()` to clear storage. |
+| `refresh` | Request used by `refreshToken()`. |
+| `name` | Strategy id (default: `'rest'`). |
+| `signInUrl` | Optional app URL for the login screen. |
+| `axiosInstance` | Optional axios instance (default: `axios.create()`). |
+| `getToken` | Optional extractor; if missing, tokens in `AuthManagerData` stay empty unless you merge them yourself. |
 
 ## API
 
-### RestStrategy
+### `RestStrategy`
 
 #### Constructor
 
-```typescript
+```ts
 constructor(config: RestConfig)
 ```
 
 #### Methods
 
-- `checkAuth(): Promise<boolean>` - Check authentication
-- `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign in user
-- `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Sign up user
-- `signOut(): Promise<void>` - Sign out user
-- `refreshToken(): Promise<void>` - Refresh token
-- `clear(): void` - Clear authentication state
+- `checkAuth(): Promise<AuthManagerData>` — requires `checkAuth` URL.
+- `signIn<T, D>(config?: D): Promise<T>` — requires `signIn` URL; merges response with `AuthManagerData`.
+- `signUp<T, D>(config?: D): Promise<T>` — if `signUp` URL is missing in config, returns an unauthenticated `AuthManagerData` placeholder (no-op); otherwise merges response with `AuthManagerData`.
+- `signOut(): Promise<void>` — calls `signOut` URL when configured; otherwise no-op.
+- `refreshToken(): Promise<AuthManagerData>` — requires `refresh` in config; coalesces concurrent refresh calls.
 
 #### Properties
 
-- `name: string` - Strategy name
-- `axiosInstance: AxiosInstance` - Axios instance
-- `token?: string` - Current token
-- `isAuthenticated: boolean` - Authentication status
+- `name: string`
+- `axiosInstance: AxiosInstance`
+- `urls: Partial<Record<UrlName, UrlConfig>>`
+- `getToken?` — same as config
+- `signInUrl?: string`
+- `startUrl` — get/set string (in-memory on the instance)
 
-## Token storage
+### `AuthManagerData` shape
 
-Access token (and optionally refresh token) are stored using the configured `accessToken` and `refreshToken` configs. Each can use `sessionStorage` or `localStorage` independently.
+Matches `@auth-strategy-manager/core` (returned from `checkAuth` / `refreshToken` / merged into `signIn` / `signUp` results):
+
+```ts
+type AuthManagerData = {
+  isAuthenticated: boolean;
+  strategyName: string;
+  accessToken: string;
+  refreshToken?: string;
+};
+```
+
+## Token persistence
+
+`RestStrategy` does **not** read or write `localStorage` / `sessionStorage`. Configure `AuthStorageManager` on `AuthStrategyManager` in **core** so tokens and flags match your app.
 
 ## License
 
