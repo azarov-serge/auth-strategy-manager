@@ -115,7 +115,7 @@ constructor(strategies: Strategy[])
 
 #### Методы
 
-- `checkAuth(): Promise<AuthManagerData>` - Проверяет статус аутентификации по всем стратегиям и возвращает нормализованное состояние. Стратегии, у которых у конструктора в рантайме имя `RestStrategy`, пропускают `checkAuth`, если и `accessToken`, и `refreshToken` в `AuthStorageManager` используют только `localStorage`/`sessionStorage` и оба пусты (лишний HTTP не уходит). Остальные стратегии всегда участвуют в проверке. Слоты с `HTTP_ONLY_COOKIE` или `RAM` не считаются «доказательством отсутствия сессии», чтобы cookie-only REST по-прежнему вызывал `checkAuth`. Сильная минификация имён классов может сломать проверку по имени `RestStrategy`.
+- `checkAuth(): Promise<AuthManagerData>` - Проверяет статус аутентификации по всем стратегиям и возвращает нормализованное состояние. Стратегии, у которых у конструктора в рантайме имя `RestStrategy`, пропускают `checkAuth`, если слот `refreshToken` в `AuthStorageManager` использует только `localStorage`/`sessionStorage` и пуст (лишний HTTP не уходит). **Access-токен в этом решении не учитывается** — например, access в `sessionStorage` пропадает при закрытии вкладки, а refresh в `localStorage` всё ещё позволяет восстановить сессию. Если `refreshToken` в `HTTP_ONLY_COOKIE` или `RAM`, пропуск по этому правилу не делается. Остальные стратегии всегда участвуют в проверке. Сильная минификация имён классов может сломать проверку по имени `RestStrategy`.
 - `signIn<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signIn` активной стратегии.
 - `signUp<T = unknown, D = undefined>(config?: D): Promise<T>` - Проксирует вызов `signUp` активной стратегии.
 - `signOut(): Promise<void>` - Проксирует вызов `signOut` активной стратегии.

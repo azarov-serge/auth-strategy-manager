@@ -238,26 +238,20 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
     if (strategy.constructor?.name !== 'RestStrategy') {
       return true;
     }
-    return !this.hasNoClientPersistedCredentials();
+    return !this.hasNoClientPersistedRefreshToken();
   }
 
   /**
-   * True when access (and refresh, if also client-persisted) are empty in localStorage/sessionStorage.
-   * False if either uses HTTP_ONLY_COOKIE or RAM — a session may still exist (e.g. cookie-only REST).
+   * True when refresh is only in localStorage/sessionStorage and is empty.
+   * Access token is ignored: it may live in sessionStorage and disappear when the tab closes while refresh
+   * remains in localStorage and can restore the session via `checkAuth` / refresh.
+   * False if refresh uses HTTP_ONLY_COOKIE or RAM — session may still exist without a readable refresh.
    */
-  private hasNoClientPersistedCredentials(): boolean {
-    const { accessToken, refreshToken } = this.storageManager;
-
-    if (!this.isClientPersistedStorage(accessToken.type)) {
-      return false;
-    }
-
-    if (this.getTrimmedStorageValue(accessToken)) {
-      return false;
-    }
+  private hasNoClientPersistedRefreshToken(): boolean {
+    const { refreshToken } = this.storageManager;
 
     if (!refreshToken) {
-      return true;
+      return false;
     }
 
     if (!this.isClientPersistedStorage(refreshToken.type)) {

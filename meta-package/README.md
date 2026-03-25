@@ -126,7 +126,7 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 
 #### Methods
 
-- `checkAuth(): Promise<AuthManagerData>` - Check authentication status across all strategies and return normalized auth state. Strategies whose runtime constructor name is `RestStrategy` skip `checkAuth` when both `accessToken` and `refreshToken` in `AuthStorageManager` use only `localStorage`/`sessionStorage` and are empty (no redundant HTTP probe). Other strategies are always probed. Slots using `HTTP_ONLY_COOKIE` or `RAM` are never treated as “empty proof” so cookie-only REST still runs `checkAuth`. Aggressive class-name minification can break the `RestStrategy` name check.
+- `checkAuth(): Promise<AuthManagerData>` - Check authentication status across all strategies and return normalized auth state. Strategies whose runtime constructor name is `RestStrategy` skip `checkAuth` when the `refreshToken` slot in `AuthStorageManager` uses only `localStorage`/`sessionStorage` and is empty (no redundant HTTP probe). **Access token is not used for this decision** — e.g. access in `sessionStorage` may disappear when the tab closes while refresh in `localStorage` can still restore the session. If `refreshToken` uses `HTTP_ONLY_COOKIE` or `RAM`, `checkAuth` is not skipped on that basis. Other strategies are always probed. Aggressive class-name minification can break the `RestStrategy` name check.
 - `signIn<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signIn`.
 - `signUp<T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T>` - Proxy to the active strategy `signUp`.
 - `signOut(): Promise<void>` - Proxy to the active strategy `signOut`.
