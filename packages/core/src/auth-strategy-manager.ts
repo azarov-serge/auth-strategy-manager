@@ -1,8 +1,13 @@
 import { CertError, NetworkError, Timeout3rdPartyError } from './errors';
 import { CERT_ERROR_CODE, NETWORK_ERROR_CODE, TIMEOUT_3RD_PARTY_ERROR_CODE } from './constants';
-import { strategyHelper, StrategyHelper } from './helpers';
+import { AuthStorage, AuthStorageManager } from './helpers';
 
-import { AuthStrategyManagerStrategies, AuthStrategyManagerInterface, Strategy } from './types';
+import {
+  AuthStrategyManagerStrategies,
+  AuthStrategyManagerInterface,
+  Strategy,
+  AuthManagerData,
+} from './types';
 
 const protocol = window.location.protocol;
 const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
@@ -11,12 +16,20 @@ const startUrl = `${protocol}//${baseUrl}`;
 
 export class AuthStrategyManager implements AuthStrategyManagerInterface {
   public strategiesCount: number;
+  readonly storageManager: AuthStorageManager;
 
   private strategies: AuthStrategyManagerStrategies;
-  private readonly helper: StrategyHelper;
 
-  constructor(strategies?: Strategy[]) {
-    this.helper = strategyHelper;
+  constructor(strategies: Strategy[], storageManager?: AuthStorageManager) {
+    this.storageManager =
+      storageManager ??
+      new AuthStorageManager({
+        accessToken: new AuthStorage('accessToken', 'sessionStorage'),
+        startUrl: new AuthStorage('startUrl'),
+      });
+
+    this.storageManager.startUrl?.setValue(startUrl);
+
     this.strategiesCount = strategies?.length ?? 0;
     this.strategies =
       strategies?.reduce<AuthStrategyManagerStrategies>((acc, strategy) => {
@@ -26,30 +39,24 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
       }, {}) ?? {};
 
     if (this.strategiesCount === 1) {
-      this.helper.activeStrategyName = Object.keys(this.strategies)[0];
+      this.storageManager.strategyName.setValue(Object.keys(this.strategies)[0]);
     }
+  }
+
+  get strategyName(): string {
+    return this.storageManager.strategyName.getValue() ?? '';
   }
 
   get token(): string | undefined {
-    const strategy = this.strategies[this.helper.activeStrategyName];
-
-    return strategy?.token;
+    return this.storageManager.accessToken?.getValue() ?? undefined;
   }
 
   get isAuthenticated(): boolean | undefined {
-    const strategy = this.strategies[this.helper.activeStrategyName];
-
-    return strategy?.isAuthenticated;
+    return this.storageManager.isAuthenticated.getValue() === 'true';
   }
 
   get strategy(): Strategy {
-    const names = Object.keys(this.strategies);
-
-    if (names.length === 1) {
-      return this.strategies[names[0]];
-    }
-
-    const strategy = this.strategies[this.helper.activeStrategyName];
+    const strategy = this.resolveActiveStrategy();
 
     if (!strategy) {
       throw new Error(
@@ -61,34 +68,50 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
   }
 
   get startUrl(): string | undefined {
-    return this.helper.startUrl;
+    return this.storageManager.startUrl?.getValue() ?? undefined;
   }
 
   set startUrl(url: string) {
-    this.helper.startUrl = url;
+    this.storageManager.startUrl?.setValue(url);
   }
 
-  public checkAuth = async (): Promise<boolean> => {
+  public getRefreshToken = (): string | undefined => {
+    return this.storageManager.refreshToken?.getValue() ?? undefined;
+  };
+
+  public setRefreshToken = (token: string): void => {
+    this.storageManager.refreshToken?.setValue(token);
+  };
+
+  public checkAuth = async (): Promise<AuthManagerData> => {
     const strategyNames = Object.keys(this.strategies);
     const strategyName = strategyNames[0];
 
+    const authManagerData: AuthManagerData = {
+      isAuthenticated: false,
+      strategyName: '',
+      accessToken: '',
+      refreshToken: undefined,
+    };
+
     if (strategyNames.length === 1) {
-      return await this.strategies[strategyName].checkAuth();
+      const data = await this.strategies[strategyName].checkAuth();
+      this.applyAuthData(authManagerData, data);
+
+      this.syncStorage(authManagerData);
+
+      return authManagerData;
     }
 
     const actives = await Promise.allSettled(
       strategyNames.map((strategyName) => this.strategies[strategyName].checkAuth())
     );
 
-    let isAuthenticated = false;
-
     for (let index = 0; index < actives.length; index++) {
       const active = actives[index];
 
-      if (active.status === 'fulfilled' && active.value === true) {
-        this.helper.activeStrategyName = strategyNames[index];
-
-        isAuthenticated = true;
+      if (active.status === 'fulfilled' && active.value.isAuthenticated) {
+        this.applyAuthData(authManagerData, active.value);
 
         break;
       }
@@ -112,27 +135,65 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
       }
     }
 
-    // Trigger the active strategy's token setter so it persists the token to its storage (e.g. REST → sessionStorage).
-    this.strategy.token = this.strategy.token;
-    return isAuthenticated;
+    this.syncStorage(authManagerData);
+    return authManagerData;
   };
 
-  public signIn = <T = unknown, D = undefined>(config?: D): Promise<T> =>
-    this.strategy.signIn(config);
+  public signIn = async <T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T> => {
+    const authManagerData: AuthManagerData = {
+      isAuthenticated: false,
+      strategyName: '',
+      accessToken: '',
+      refreshToken: undefined,
+    };
 
-  public signUp = <T = unknown, D = undefined>(config?: D): Promise<T> =>
-    this.strategy.signUp(config);
+    const data = await this.strategy.signIn<T & AuthManagerData, D>(config);
+    this.applyAuthData(authManagerData, data);
+    this.syncStorage(authManagerData);
 
-  public signOut = (): Promise<void> => this.strategy.signOut();
+    return { ...data, ...authManagerData };
+  };
 
-  public refreshToken = async <T>(args?: T): Promise<void> => {
-    const strategy = this.strategies[this.helper.activeStrategyName];
+  public signUp = async <T = unknown & AuthManagerData, D = undefined>(config?: D): Promise<T> => {
+    const authManagerData: AuthManagerData = {
+      isAuthenticated: false,
+      strategyName: '',
+      accessToken: '',
+      refreshToken: undefined,
+    };
+
+    const data = await this.strategy.signUp<T & AuthManagerData, D>(config);
+    this.applyAuthData(authManagerData, data);
+    this.syncStorage(authManagerData);
+
+    return { ...data, ...authManagerData };
+  };
+
+  public signOut = async (): Promise<void> => {
+    await this.strategy.signOut();
+    this.storageManager.clear();
+  };
+
+  public refreshToken = async <T>(args?: T): Promise<AuthManagerData> => {
+    const authManagerData: AuthManagerData = {
+      isAuthenticated: false,
+      strategyName: '',
+      accessToken: '',
+      refreshToken: undefined,
+    };
+
+    const strategy = this.resolveActiveStrategy();
 
     if (!strategy) {
-      return;
+      return authManagerData;
     }
 
-    strategy.refreshToken(args);
+    const refreshed = await strategy.refreshToken(args);
+    this.applyAuthData(authManagerData, refreshed);
+
+    this.syncStorage(authManagerData);
+
+    return authManagerData;
   };
 
   public setStrategies = async (strategies: Strategy[]): Promise<void> => {
@@ -144,17 +205,66 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
     }, {});
 
     if (this.strategiesCount === 1) {
-      this.helper.activeStrategyName = Object.keys(this.strategies)[0];
+      this.storageManager.strategyName.setValue(Object.keys(this.strategies)[0]);
     }
   };
 
   public use = (strategyName: string): void => {
-    this.helper.activeStrategyName = strategyName;
+    this.storageManager.strategyName.setValue(strategyName);
   };
 
   public clear = () => {
     this.strategy.clear?.();
-    this.helper.activeStrategyName = '';
-    this.startUrl = startUrl;
+    this.storageManager.clear();
+  };
+
+  /** Same resolution as `strategy` getter: with a single strategy, no persisted name is required (e.g. after losing sessionStorage). */
+  private resolveActiveStrategy(): Strategy | undefined {
+    const names = Object.keys(this.strategies);
+
+    if (names.length === 1) {
+      return this.strategies[names[0]];
+    }
+
+    const name = this.strategyName;
+    return name ? this.strategies[name] : undefined;
+  }
+
+  private syncStorage = (authManagerData: AuthManagerData): void => {
+    if (!authManagerData.strategyName) {
+      this.storageManager.strategyName.removeValue();
+      this.storageManager.accessToken.removeValue();
+      this.storageManager.refreshToken?.removeValue();
+      this.storageManager.isAuthenticated.setValue('false');
+      return;
+    }
+
+    this.storageManager.strategyName.setValue(authManagerData.strategyName);
+
+    if (authManagerData.accessToken) {
+      this.storageManager.accessToken.setValue(authManagerData.accessToken);
+    } else {
+      this.storageManager.accessToken.removeValue();
+    }
+
+    if (authManagerData.refreshToken) {
+      this.storageManager.refreshToken?.setValue(authManagerData.refreshToken);
+    } else {
+      this.storageManager.refreshToken?.removeValue();
+    }
+
+    if (authManagerData.isAuthenticated) {
+      this.storageManager.isAuthenticated.setValue('true');
+      return;
+    }
+
+    this.storageManager.isAuthenticated.setValue('false');
+  };
+
+  private applyAuthData = (target: AuthManagerData, source: AuthManagerData): void => {
+    target.isAuthenticated = source.isAuthenticated;
+    target.strategyName = source.strategyName;
+    target.accessToken = source.accessToken;
+    target.refreshToken = source.refreshToken;
   };
 }

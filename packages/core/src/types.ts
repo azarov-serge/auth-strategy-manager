@@ -1,16 +1,23 @@
 export type AuthStrategyManagerStrategies = Record<string, Strategy>;
 
+export type AuthManagerData = {
+  isAuthenticated: boolean;
+  strategyName: string;
+  accessToken: string;
+  refreshToken?: string;
+};
+
 export type Strategy = {
   name: string;
   token?: string;
   isAuthenticated?: boolean;
   startUrl?: string;
   signInUrl?: string;
-  checkAuth: () => Promise<boolean>;
-  signIn: <T = unknown, D = undefined>(config?: D) => Promise<T>;
-  signUp: <T = unknown, D = undefined>(config?: D) => Promise<T>;
+  checkAuth: () => Promise<AuthManagerData>;
+  signIn: <T = unknown & AuthManagerData, D = undefined>(config?: D) => Promise<T>;
+  signUp: <T = unknown & AuthManagerData, D = undefined>(config?: D) => Promise<T>;
   signOut: () => Promise<void>;
-  refreshToken: <T>(args?: T) => Promise<void>;
+  refreshToken: <T = unknown>(args?: T) => Promise<AuthManagerData>;
   clear?: () => void;
 };
 

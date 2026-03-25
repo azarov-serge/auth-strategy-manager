@@ -1,1 +1,1 @@
-export * from './strategy-helper';
+export * from './auth-storage-manager';
