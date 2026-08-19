@@ -10,7 +10,7 @@
 ## Установка
 
 ```bash
-npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
+npm install @auth-strategy-manager/rest @auth-strategy-manager/core
 ```
 
 Используйте **core 2.x** вместе с **rest 2.x**.
@@ -22,19 +22,13 @@ npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
-import axios, { type AxiosRequestConfig } from 'axios';
-
-const axiosInstance = axios.create({
-  baseURL: 'https://api.example.com',
-  timeout: 5000,
-});
+import type { RequestConfig, RestResponse } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
   name: 'my-rest',
   signInUrl: '/login',
-  axiosInstance,
   getToken: (response, options) => {
-    const data = (response as { data?: { access?: string; refresh?: string } }).data;
+    const data = (response as RestResponse).data as { access?: string; refresh?: string } | undefined;
     if (options?.type === 'refresh') return data?.refresh ?? '';
     return data?.access ?? '';
   },
@@ -47,7 +41,7 @@ const restStrategy = new RestStrategy({
 
 const authManager = new AuthStrategyManager([restStrategy]);
 
-await restStrategy.signIn<unknown, AxiosRequestConfig>({
+await restStrategy.signIn<unknown, RequestConfig>({
   data: { email: 'user@example.com', password: 'secret' },
 });
 
@@ -71,20 +65,20 @@ const restStrategy = new RestStrategy({
 В пакете тип экспортируется как `RestConfig`.
 
 ```typescript
-import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+import type { RequestConfig } from '@auth-strategy-manager/rest';
 
 type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
 
 type UrlConfig = {
   url: string;
-  method?: AxiosRequestConfig['method'];
+  method?: RequestConfig['method'];
 };
 
 type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
   name?: string;
   /** URL страницы входа (для приложения) */
   signInUrl?: string;
-  axiosInstance?: AxiosInstance;
+  request?: (url: string, config?: RequestConfig) => Promise<unknown>;
   /** Достать access / refresh из ответа API */
   getToken?: (
     response: unknown,
@@ -111,7 +105,7 @@ type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
 | `refresh` | Запрос для `refreshToken()`. |
 | `name` | Идентификатор стратегии (по умолчанию `'rest'`). |
 | `signInUrl` | Опциональный URL экрана логина. |
-| `axiosInstance` | Свой axios (по умолчанию `axios.create()`). |
+| `request` | Опциональный адаптер запросов. Если не передан, используется встроенный `fetch`. |
 | `getToken` | Опционально; без неё поля токенов в `AuthManagerData` останутся пустыми, если вы не дополняете ответ сами. |
 | `getIsAuthenticated` | Опционально для cookie-only: вернуть `true` для “аутентифицированных” ответов даже без токенов. |
 
@@ -136,7 +130,7 @@ constructor(config: RestConfig)
 #### Свойства
 
 - `name: string`
-- `axiosInstance: AxiosInstance`
+- `request: RequestAdapter`
 - `urls: Partial<Record<UrlName, UrlConfig>>`
 - `getToken?` — как в конфиге
 - `signInUrl?: string`

@@ -1,6 +1,6 @@
 {
   "name": "@auth-strategy-manager/rest",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "REST API strategy for auth-strategy-manager",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,11 +15,7 @@
     "README_RU.md"
   ],
   "dependencies": {
-    "@auth-strategy-manager/core": "^2.0.0",
-    "axios": "1.11.0"
-  },
-  "peerDependencies": {
-    "axios": "1.11.0"
+    "@auth-strategy-manager/core": "^2.0.0"
   },
   "keywords": [
     "authentication",

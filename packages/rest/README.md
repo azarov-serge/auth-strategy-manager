@@ -10,7 +10,7 @@ REST API strategy for [auth-strategy-manager](https://github.com/azarov-serge/au
 ## Installation
 
 ```bash
-npm install @auth-strategy-manager/rest @auth-strategy-manager/core axios
+npm install @auth-strategy-manager/rest @auth-strategy-manager/core
 ```
 
 Use **core 2.x** with **rest 2.x**.
@@ -22,19 +22,13 @@ Use **core 2.x** with **rest 2.x**.
 ```typescript
 import { AuthStrategyManager } from '@auth-strategy-manager/core';
 import { RestStrategy } from '@auth-strategy-manager/rest';
-import axios, { type AxiosRequestConfig } from 'axios';
-
-const axiosInstance = axios.create({
-  baseURL: 'https://api.example.com',
-  timeout: 5000,
-});
+import type { RequestConfig, RestResponse } from '@auth-strategy-manager/rest';
 
 const restStrategy = new RestStrategy({
   name: 'my-rest',
   signInUrl: '/login',
-  axiosInstance,
   getToken: (response, options) => {
-    const data = (response as { data?: { access?: string; refresh?: string } }).data;
+    const data = (response as RestResponse).data as { access?: string; refresh?: string } | undefined;
     if (options?.type === 'refresh') return data?.refresh ?? '';
     return data?.access ?? '';
   },
@@ -47,7 +41,7 @@ const restStrategy = new RestStrategy({
 
 const authManager = new AuthStrategyManager([restStrategy]);
 
-await restStrategy.signIn<unknown, AxiosRequestConfig>({
+await restStrategy.signIn<unknown, RequestConfig>({
   data: { email: 'user@example.com', password: 'secret' },
 });
 
@@ -71,20 +65,20 @@ const restStrategy = new RestStrategy({
 Exported as `RestConfig` from this package.
 
 ```typescript
-import type { AxiosInstance, AxiosRequestConfig } from 'axios';
+import type { RequestConfig } from '@auth-strategy-manager/rest';
 
 type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
 
 type UrlConfig = {
   url: string;
-  method?: AxiosRequestConfig['method'];
+  method?: RequestConfig['method'];
 };
 
 type RestConfig = Partial<Record<UrlName, UrlConfig>> & {
   name?: string;
   /** Redirect target for the sign-in page (app use) */
   signInUrl?: string;
-  axiosInstance?: AxiosInstance;
+  request?: (url: string, config?: RequestConfig) => Promise<unknown>;
   /** Map API responses to access / refresh strings */
   getToken?: (
     response: unknown,
@@ -111,7 +105,7 @@ All **URL entries are optional** in the type — pass only what you call. Runtim
 | `refresh` | Request used by `refreshToken()`. |
 | `name` | Strategy id (default: `'rest'`). |
 | `signInUrl` | Optional app URL for the login screen. |
-| `axiosInstance` | Optional axios instance (default: `axios.create()`). |
+| `request` | Optional custom request adapter. If omitted, built-in `fetch` is used. |
 | `getToken` | Optional extractor; if missing, tokens in `AuthManagerData` stay empty unless you merge them yourself. |
 | `getIsAuthenticated` | Optional cookie-only extractor: return `true` for authenticated responses even when tokens are empty. |
 
@@ -136,7 +130,7 @@ constructor(config: RestConfig)
 #### Properties
 
 - `name: string`
-- `axiosInstance: AxiosInstance`
+- `request: RequestAdapter`
 - `urls: Partial<Record<UrlName, UrlConfig>>`
 - `getToken?` — same as config
 - `signInUrl?: string`

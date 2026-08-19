@@ -1,18 +1,56 @@
-import { AxiosInstance, AxiosRequestConfig } from 'axios';
-
 export type UrlConfig = {
   url: string;
-  method?: AxiosRequestConfig['method'];
+  method?: HttpMethod;
 };
 
 export type UrlName = 'checkAuth' | 'signIn' | 'signUp' | 'signOut' | 'refresh';
+
+export type HttpMethod =
+  | 'GET'
+  | 'POST'
+  | 'PUT'
+  | 'PATCH'
+  | 'DELETE'
+  | 'OPTIONS'
+  | 'HEAD'
+  | 'get'
+  | 'post'
+  | 'put'
+  | 'patch'
+  | 'delete'
+  | 'options'
+  | 'head';
+
+export type RequestConfig = {
+  method?: HttpMethod;
+  headers?: Record<string, string>;
+  params?: Record<string, string | number | boolean | null | undefined>;
+  body?: BodyInit | null;
+  data?: unknown;
+  credentials?: RequestCredentials;
+  withCredentials?: boolean;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+};
+
+export type RestResponse = {
+  data: unknown;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  url: string;
+  raw: Response;
+};
+
+export type RequestAdapter = (url: string, config?: RequestConfig) => Promise<unknown>;
 
 /** All URL endpoints are optional — pass only what you use (e.g. omit `signOut` for local-only logout via sessionStorage/localStorage). */
 export type Config = Partial<Record<UrlName, UrlConfig>> & {
   name?: string;
   /** URL for redirecting to the authorization page */
   signInUrl?: string;
-  axiosInstance?: AxiosInstance;
+  /** Optional custom HTTP adapter (fetch is used by default). */
+  request?: RequestAdapter;
   /** Extract access / refresh token from API response */
   getToken?: (response: unknown, options?: { url?: string; type: 'access' | 'refresh' }) => string;
   /**

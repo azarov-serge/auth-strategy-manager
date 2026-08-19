@@ -1,12 +1,11 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, isAxiosError } from 'axios';
 import type { AuthManagerData } from '@auth-strategy-manager/core';
-import { Config, UrlConfig, UrlName } from './types';
+import { Config, RequestConfig, RequestAdapter, RestResponse, UrlConfig, UrlName } from './types';
 
 const DEFAULT_NAME = 'rest';
 
 export class RestStrategy {
   public readonly name: string;
-  public readonly axiosInstance: AxiosInstance;
+  public readonly request: RequestAdapter;
   public readonly urls: Partial<Record<UrlName, UrlConfig>>;
   public readonly getToken?: Config['getToken'];
   public readonly getIsAuthenticated?: Config['getIsAuthenticated'];
@@ -16,12 +15,12 @@ export class RestStrategy {
   private startUrlValue?: string;
 
   constructor(config: Config) {
-    const { name, signInUrl, axiosInstance, getToken, getIsAuthenticated, ...urls } = config;
+    const { name, signInUrl, request, getToken, getIsAuthenticated, ...urls } = config;
 
     this.name = name || DEFAULT_NAME;
     this.signInUrl = signInUrl;
     this.urls = urls;
-    this.axiosInstance = axiosInstance ?? axios.create();
+    this.request = request ?? this.defaultRequest;
     this.getToken = getToken;
     this.getIsAuthenticated = getIsAuthenticated;
   }
@@ -40,7 +39,7 @@ export class RestStrategy {
     }
 
     const { url, method } = this.urls.checkAuth;
-    const response = await this.callAxios(url, { method });
+    const response = await this.callRequest(url, { method });
 
     return this.toAuthManagerData(response, url);
   };
@@ -85,7 +84,7 @@ export class RestStrategy {
       return;
     }
 
-    await this.callAxios(url, { method });
+    await this.callRequest(url, { method });
   };
 
   public refreshToken = async (): Promise<AuthManagerData> => {
@@ -108,7 +107,7 @@ export class RestStrategy {
     }
 
     this.currentRefresh = (async () => {
-      const response = await this.callAxios(url, { method });
+      const response = await this.callRequest(url, { method });
       return this.toAuthManagerData(response, url);
     })();
 
@@ -122,12 +121,12 @@ export class RestStrategy {
   private sendRequest = async <D>(urlConfig: UrlConfig, config?: D): Promise<unknown> => {
     const { url, method } = urlConfig;
 
-    let axiosConfig: AxiosRequestConfig = {};
+    let requestConfig: RequestConfig = {};
     if (config && typeof config === 'object') {
-      axiosConfig = config as AxiosRequestConfig;
+      requestConfig = config as RequestConfig;
     }
 
-    return await this.callAxios(url, { ...axiosConfig, method });
+    return await this.callRequest(url, { ...requestConfig, method });
   };
 
   private toAuthManagerData = (response: unknown, url?: string): AuthManagerData => {
@@ -156,36 +155,128 @@ export class RestStrategy {
     return this.getToken(response, options) || '';
   };
 
-  private callAxios = async (
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<unknown> => {
+  private callRequest = async (url: string, config?: RequestConfig): Promise<unknown> => {
     try {
-      return await this.axiosInstance(url, config);
+      return await this.request(url, config);
     } catch (error) {
-      throw this.normalizeAxiosError(error);
+      throw this.normalizeRequestError(error);
     }
   };
 
-  private normalizeAxiosError = (error: unknown): unknown => {
-    if (!isAxiosError(error)) {
+  private normalizeRequestError = (error: unknown): unknown => {
+    if (!(error instanceof Error)) {
       return error;
     }
-
-    const err = error as AxiosError & { code?: unknown };
-
+    const err = error as Error & { code?: unknown };
     if (typeof err.code === 'string' && err.code) {
       return err;
     }
-
     const message = String(err.message ?? '');
     const lower = message.toLowerCase();
     const code =
-      lower.includes('timeout') || lower.includes('timed out')
+      lower.includes('timeout') || lower.includes('timed out') || lower.includes('aborted')
         ? 'ETIMEDOUT'
         : 'ERR_NETWORK';
 
     err.code = code;
     return err;
   };
+
+  private defaultRequest: RequestAdapter = async (url, config = {}) => {
+    const finalUrl = this.withQuery(url, config.params);
+    const { signal, timeoutMs } = config;
+    const controller = timeoutMs ? new AbortController() : null;
+    const timeoutId =
+      controller && timeoutMs
+        ? setTimeout(() => controller.abort(new Error('Request timeout')), timeoutMs)
+        : null;
+
+    if (signal && controller && !signal.aborted) {
+      signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
+    }
+
+    const body = this.toBody(config);
+    const headers = { ...(config.headers ?? {}) };
+    if (body && typeof body === 'string' && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    try {
+      const response = await fetch(finalUrl, {
+        method: config.method,
+        headers,
+        body,
+        credentials: config.credentials ?? (config.withCredentials ? 'include' : 'same-origin'),
+        signal: controller?.signal ?? signal,
+      });
+
+      const data = await this.parseResponseData(response);
+      const restResponse: RestResponse = {
+        data,
+        status: response.status,
+        statusText: response.statusText,
+        headers: this.headersToRecord(response.headers),
+        url: response.url,
+        raw: response,
+      };
+      return restResponse;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  };
+
+  private toBody(config: RequestConfig): BodyInit | null | undefined {
+    if (config.body !== undefined) {
+      return config.body;
+    }
+    if (config.data === undefined || config.data === null) {
+      return undefined;
+    }
+    if (typeof config.data === 'string' || config.data instanceof FormData || config.data instanceof URLSearchParams) {
+      return config.data;
+    }
+    return JSON.stringify(config.data);
+  }
+
+  private withQuery(
+    url: string,
+    params?: Record<string, string | number | boolean | null | undefined>
+  ): string {
+    if (!params) {
+      return url;
+    }
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+      query.set(key, String(value));
+    }
+    const queryString = query.toString();
+    if (!queryString) {
+      return url;
+    }
+    return url.includes('?') ? `${url}&${queryString}` : `${url}?${queryString}`;
+  }
+
+  private async parseResponseData(response: Response): Promise<unknown> {
+    const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+    if (response.status === 204 || response.status === 205) {
+      return null;
+    }
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+    return await response.text();
+  }
+
+  private headersToRecord(headers: Headers): Record<string, string> {
+    const result: Record<string, string> = {};
+    headers.forEach((value, key) => {
+      result[key] = value;
+    });
+    return result;
+  }
 }
