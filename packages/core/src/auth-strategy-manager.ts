@@ -9,11 +9,6 @@ import {
   AuthManagerData,
 } from './types';
 
-const protocol = window.location.protocol;
-const [baseUrl] = window.location.href.replace(`${protocol}//`, '').split('/');
-
-const startUrl = `${protocol}//${baseUrl}`;
-
 export class AuthStrategyManager implements AuthStrategyManagerInterface {
   public strategiesCount: number;
   readonly storageManager: AuthStorageManager;
@@ -27,8 +22,6 @@ export class AuthStrategyManager implements AuthStrategyManagerInterface {
         accessToken: new AuthStorage('accessToken', 'sessionStorage'),
         startUrl: new AuthStorage('startUrl'),
       });
-
-    this.storageManager.startUrl?.setValue(startUrl);
 
     this.strategiesCount = strategies?.length ?? 0;
     this.strategies =

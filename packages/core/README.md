@@ -74,7 +74,7 @@ Creates a new AuthStrategyManager instance with the provided strategies.
 
 - `strategiesCount: number` - Total number of registered strategies
 - `strategy: Strategy` - Currently active strategy. When only one strategy is provided, it is used by default (no need to call `use()`).
-- `startUrl: string | undefined` - URL to redirect after authentication
+- `startUrl: string | undefined` - URL to redirect after authentication. Not set automatically — assign via the setter when needed.
 
 #### Methods
 
